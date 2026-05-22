@@ -15,53 +15,61 @@ interface MatchModalProps {
   onClose: () => void;
 }
 
-const Confetti: React.FC = () => {
-  const particles = Array.from({ length: 50 }).map((_, i) => {
-    const scale = useSharedValue(0);
-    const opacity = useSharedValue(1);
-    const translateY = useSharedValue(0);
+const COLORS = ["#d97757", "#f5a76d", "#c7622a", "#e8a885"];
 
-    useEffect(() => {
-      scale.value = withSpring(1, { damping: 0.6, mass: 0.5 });
-      opacity.value = withSequence(
-        withDelay(1200, withSpring(0, { damping: 0.6 }))
-      );
-      translateY.value = withSequence(
-        withDelay(1200, withSpring(-100, { damping: 0.8 }))
-      );
-    }, []);
+interface ParticleProps {
+  size: number;
+  left: number;
+  color: string;
+}
 
-    const animStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }, { translateY: translateY.value }],
-      opacity: opacity.value,
-    }));
+const Particle: React.FC<ParticleProps> = ({ size, left, color }) => {
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const translateY = useSharedValue(0);
 
-    const size = Math.random() * 8 + 4;
-    const left = Math.random() * 100;
-    const colors = ["#d97757", "#f5a76d", "#c7622a", "#e8a885"];
-    const color = colors[Math.floor(Math.random() * colors.length)];
+  useEffect(() => {
+    scale.value = withSpring(1, { damping: 0.6, mass: 0.5 });
+    opacity.value = withSequence(withDelay(1200, withSpring(0, { damping: 0.6 })));
+    translateY.value = withSequence(withDelay(1200, withSpring(-100, { damping: 0.8 })));
+  }, []);
 
-    return (
-      <Animated.View
-        key={i}
-        style={[
-          animStyle,
-          {
-            position: "absolute",
-            left: `${left}%`,
-            top: "50%",
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            backgroundColor: color,
-          },
-        ]}
-      />
-    );
-  });
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }, { translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
 
-  return <View className="absolute inset-0">{particles}</View>;
+  return (
+    <Animated.View
+      style={[
+        animStyle,
+        {
+          position: "absolute",
+          left: `${left}%`,
+          top: "50%",
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+        },
+      ]}
+    />
+  );
 };
+
+const PARTICLES = Array.from({ length: 50 }, () => ({
+  size: Math.random() * 8 + 4,
+  left: Math.random() * 100,
+  color: COLORS[Math.floor(Math.random() * COLORS.length)],
+}));
+
+const Confetti: React.FC = () => (
+  <View className="absolute inset-0">
+    {PARTICLES.map((p, i) => (
+      <Particle key={i} size={p.size} left={p.left} color={p.color} />
+    ))}
+  </View>
+);
 
 export const MatchModal: React.FC<MatchModalProps> = ({
   visible,

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 
 from config import get_settings
 from deps import get_current_user
@@ -40,6 +40,7 @@ async def update_preferences(
 @limiter.limit(_settings.rate_limit_push_token)
 async def add_push_token(
     request: Request,
+    response: Response,
     payload: PushTokenIn,
     current: User = Depends(get_current_user),
     users: UserService = Depends(get_user_service),

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 
 from config import get_settings
 from schemas.auth import RefreshRequest, TokenResponse, UserCreate, UserLogin
@@ -13,6 +13,7 @@ _settings = get_settings()
 @limiter.limit(_settings.rate_limit_signup)
 async def signup(
     request: Request,
+    response: Response,
     data: UserCreate,
     auth: AuthService = Depends(get_auth_service),
 ) -> TokenResponse:
@@ -24,6 +25,7 @@ async def signup(
 @limiter.limit(_settings.rate_limit_login)
 async def login(
     request: Request,
+    response: Response,
     data: UserLogin,
     auth: AuthService = Depends(get_auth_service),
 ) -> TokenResponse:
@@ -35,6 +37,7 @@ async def login(
 @limiter.limit(_settings.rate_limit_refresh)
 async def refresh(
     request: Request,
+    response: Response,
     data: RefreshRequest,
     auth: AuthService = Depends(get_auth_service),
 ) -> TokenResponse:

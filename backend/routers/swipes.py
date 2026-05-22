@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pymongo.errors import DuplicateKeyError
 
 from config import get_settings
@@ -29,6 +29,7 @@ def _restaurant_out(r: Restaurant) -> RestaurantOut:
 @limiter.limit(_settings.rate_limit_swipe)
 async def submit_swipe(
     request: Request,
+    response: Response,
     session_id: UUID,
     data: SwipeIn,
     current: User = Depends(get_current_user),

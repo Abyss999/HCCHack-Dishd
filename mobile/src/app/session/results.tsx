@@ -41,7 +41,7 @@ export default function ResultsScreen() {
   useWebSocket(sessionId || "", tokens?.access_token || "", wsHandlers);
 
   const handleReturnHome = () => {
-    router.replace("/(tabs)/");
+    router.replace("/(tabs)");
   };
 
   if (loading && displayResults.length === 0) {

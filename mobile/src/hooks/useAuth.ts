@@ -104,7 +104,7 @@ export const useAuth = () => {
         headers: { Authorization: `Bearer ${data.access_token}` },
       });
       if (userRes.ok) setUser(await userRes.json());
-      router.replace("/(tabs)/");
+      router.replace("/(tabs)");
     },
     [router]
   );
@@ -121,7 +121,7 @@ export const useAuth = () => {
       setTokens(data);
       await storage.set("auth_tokens", JSON.stringify(data));
       setUser({ id: "", email, name });
-      router.replace("/(tabs)/");
+      router.replace("/(tabs)");
     },
     [router]
   );

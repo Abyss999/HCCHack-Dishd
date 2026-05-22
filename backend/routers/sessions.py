@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Request, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, Path, Request, Response, WebSocket, WebSocketDisconnect, status
 
 from config import get_settings
 from deps import get_current_user
@@ -38,6 +38,7 @@ def _to_out(session: Session) -> SessionOut:
 @limiter.limit(_settings.rate_limit_session_create)
 async def create_session(
     request: Request,
+    response: Response,
     data: SessionCreate,
     current: User = Depends(get_current_user),
     sessions: SessionService = Depends(get_session_service),
@@ -60,6 +61,7 @@ async def get_session_by_code(
 @limiter.limit(_settings.rate_limit_session_join)
 async def join_session(
     request: Request,
+    response: Response,
     session_id: UUID,
     current: User = Depends(get_current_user),
     sessions: SessionService = Depends(get_session_service),

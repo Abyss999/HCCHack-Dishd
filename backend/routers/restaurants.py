@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from config import get_settings
 from deps import get_current_user
@@ -18,6 +18,7 @@ _settings = get_settings()
 @limiter.limit(_settings.rate_limit_restaurants)
 async def list_restaurants(
     request: Request,
+    response: Response,
     session_id: UUID,
     current: User = Depends(get_current_user),
     sessions: SessionService = Depends(get_session_service),
