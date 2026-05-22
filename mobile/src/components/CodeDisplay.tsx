@@ -1,6 +1,9 @@
 import React from "react";
 import { View, Text, Pressable, Share, Alert } from "react-native";
 import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
+import Toast from "react-native-toast-message";
+import { useColors } from "@/hooks/useColors";
 
 interface CodeDisplayProps {
   code: string;
@@ -8,18 +11,17 @@ interface CodeDisplayProps {
   onShare?: () => void;
 }
 
-export const CodeDisplay: React.FC<CodeDisplayProps> = ({
-  code,
-  onCopy,
-  onShare,
-}) => {
+export const CodeDisplay: React.FC<CodeDisplayProps> = ({ code, onCopy, onShare }) => {
+  const colors = useColors();
+
   const handleCopy = async () => {
     try {
       await Clipboard.setStringAsync(code);
-      Alert.alert("Copied!", "Session code copied to clipboard");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Toast.show({ type: "success", text1: "Copied!", text2: "Session code copied to clipboard" });
       onCopy?.();
-    } catch (error) {
-      Alert.alert("Error", "Failed to copy code");
+    } catch {
+      Toast.show({ type: "error", text1: "Failed to copy" });
     }
   };
 
@@ -30,26 +32,37 @@ export const CodeDisplay: React.FC<CodeDisplayProps> = ({
         title: "DishMatch Session",
       });
       onShare?.();
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to share");
     }
   };
 
-  const codeChars = code.split("");
-
   return (
-    <View className="items-center gap-6">
+    <View style={{ alignItems: "center", gap: 20 }}>
       {/* Code boxes */}
-      <View className="flex-row gap-2">
-        {codeChars.map((char, index) => (
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        {code.split("").map((char, index) => (
           <View
             key={index}
-            className="w-15 h-15 rounded-md border-2 border-primary items-center justify-center"
             style={{
-              backgroundColor: "#262626",
+              width: 50,
+              height: 50,
+              borderRadius: 10,
+              borderWidth: 1.5,
+              borderColor: "rgba(217, 119, 87, 0.4)",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: colors.surfaceLight,
             }}
           >
-            <Text className="font-mono text-display-1 text-primary font-bold">
+            <Text
+              style={{
+                fontFamily: "IBM Plex Mono",
+                fontSize: 18,
+                fontWeight: "600",
+                color: colors.primary,
+              }}
+            >
               {char}
             </Text>
           </View>
@@ -57,18 +70,36 @@ export const CodeDisplay: React.FC<CodeDisplayProps> = ({
       </View>
 
       {/* Action buttons */}
-      <View className="flex-row gap-3">
+      <View style={{ flexDirection: "row", gap: 10 }}>
         <Pressable
           onPress={handleCopy}
-          className="flex-1 px-4 py-3 rounded-md border border-primary items-center justify-center"
+          style={{
+            flex: 1,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: colors.primary,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
         >
-          <Text className="text-primary font-roboto font-medium">Copy</Text>
+          <Text style={{ color: colors.primary }} className="font-roboto font-medium text-body-sm">Copy</Text>
         </Pressable>
         <Pressable
           onPress={handleShare}
-          className="flex-1 px-4 py-3 rounded-md border border-primary items-center justify-center"
+          style={{
+            flex: 1,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: colors.primary,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
         >
-          <Text className="text-primary font-roboto font-medium">Share</Text>
+          <Text style={{ color: colors.primary }} className="font-roboto font-medium text-body-sm">Share</Text>
         </Pressable>
       </View>
     </View>

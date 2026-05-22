@@ -1,14 +1,18 @@
 import { Tabs } from "expo-router";
-import { View, Text } from "react-native";
+import { SymbolView } from "expo-symbols";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function TabsLayout() {
+  const { resolvedScheme } = useTheme();
+  const isDark = resolvedScheme === "dark";
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#262626",
-          borderTopColor: "#404040",
+          backgroundColor: isDark ? "#262626" : "#ffffff",
+          borderTopColor: isDark ? "#404040" : "#e8e3dc",
           borderTopWidth: 1,
           paddingBottom: 8,
           paddingTop: 8,
@@ -17,10 +21,10 @@ export default function TabsLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontFamily: "Roboto",
-          marginTop: 4,
+          marginTop: 2,
         },
         tabBarActiveTintColor: "#d97757",
-        tabBarInactiveTintColor: "#808080",
+        tabBarInactiveTintColor: isDark ? "#808080" : "#a8a29e",
       }}
     >
       <Tabs.Screen
@@ -28,14 +32,12 @@ export default function TabsLayout() {
         options={{
           title: "Home",
           tabBarLabel: "Home",
-          tabBarIcon: ({ color }) => (
-            <View
-              style={{
-                width: 24,
-                height: 24,
-                backgroundColor: color,
-                borderRadius: 4,
-              }}
+          tabBarIcon: ({ color, focused }) => (
+            <SymbolView
+              name={focused ? "house.fill" : "house"}
+              tintColor={color}
+              size={24}
+              resizeMode="scaleAspectFit"
             />
           ),
         }}
@@ -45,14 +47,12 @@ export default function TabsLayout() {
         options={{
           title: "Profile",
           tabBarLabel: "Profile",
-          tabBarIcon: ({ color }) => (
-            <View
-              style={{
-                width: 24,
-                height: 24,
-                backgroundColor: color,
-                borderRadius: 12,
-              }}
+          tabBarIcon: ({ color, focused }) => (
+            <SymbolView
+              name={focused ? "person.fill" : "person"}
+              tintColor={color}
+              size={24}
+              resizeMode="scaleAspectFit"
             />
           ),
         }}

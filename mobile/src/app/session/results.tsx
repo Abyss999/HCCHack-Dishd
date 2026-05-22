@@ -4,13 +4,13 @@ import {
   Text,
   SafeAreaView,
   ScrollView,
-  Image,
   Pressable,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSession } from "@/hooks/useSession";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useAuth } from "@/hooks/useAuth";
+import { useColors } from "@/hooks/useColors";
 import { SessionResult } from "@/types";
 
 export default function ResultsScreen() {
@@ -18,6 +18,7 @@ export default function ResultsScreen() {
   const router = useRouter();
   const { tokens } = useAuth();
   const { results, getResults, loading } = useSession(tokens);
+  const colors = useColors();
   const [displayResults, setDisplayResults] = useState<SessionResult[]>([]);
 
   useEffect(() => {
@@ -46,8 +47,8 @@ export default function ResultsScreen() {
 
   if (loading && displayResults.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-neutral-bg justify-center items-center">
-        <Text className="text-body text-neutral-text-secondary">
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ color: colors.textSecondary }} className="text-body">
           Calculating results...
         </Text>
       </SafeAreaView>
@@ -55,126 +56,98 @@ export default function ResultsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-bg">
-      <ScrollView className="flex-1">
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView style={{ flex: 1 }}>
         {/* Header */}
-        <View className="px-4 pt-6 pb-8">
-          <Text className="font-dm-sans text-display-2 text-neutral-text mb-2">
+        <View style={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 32 }}>
+          <Text style={{ color: colors.text }} className="font-dm-sans text-display-2 mb-2">
             Top Results
           </Text>
-          <Text className="text-body text-neutral-text-secondary">
+          <Text style={{ color: colors.textSecondary }} className="text-body">
             Based on everyone's votes
           </Text>
         </View>
 
         {/* Results list */}
-        <View className="px-4 gap-4 pb-8">
-          {displayResults.map((result, index) => (
-            <View
-              key={result.restaurant.id}
-              className="rounded-lg overflow-hidden"
-              style={{
-                backgroundColor: "#262626",
-              }}
-            >
-              {/* Rank badge + Image */}
-              <View className="relative h-48">
-                <Image
-                  source={{ uri: result.restaurant.photo_url ?? undefined }}
-                  className="w-full h-full bg-neutral-surface"
-                  resizeMode="cover"
-                />
+        <View style={{ paddingHorizontal: 16, gap: 10, paddingBottom: 32 }}>
+          {displayResults.map((result, index) => {
+            const medal = ["🥇", "🥈", "🥉"][index] ?? `#${index + 1}`;
+            return (
+              <View
+                key={result.restaurant.id}
+                style={{
+                  flexDirection: "row",
+                  gap: 10,
+                  alignItems: "flex-start",
+                  padding: 12,
+                  borderRadius: 10,
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.cardBorder,
+                }}
+              >
                 {/* Rank badge */}
                 <View
-                  className="absolute top-3 right-3 rounded-full w-12 h-12 items-center justify-center"
                   style={{
-                    backgroundColor: index === 0 ? "#f5a76d" : "#3d3d3d",
+                    width: 40,
+                    height: 40,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "rgba(217, 119, 87, 0.2)",
+                    flexShrink: 0,
                   }}
                 >
-                  <Text
-                    className="font-dm-sans font-bold text-h2"
-                    style={{
-                      color: index === 0 ? "#1a1a1a" : "#ffffff",
-                    }}
-                  >
-                    #{index + 1}
+                  <Text style={{ fontSize: index < 3 ? 20 : 16, fontWeight: "700", color: colors.primary }}>
+                    {medal}
                   </Text>
                 </View>
-              </View>
 
-              {/* Info section */}
-              <View className="p-4">
-                {/* Restaurant name + rating */}
-                <View className="mb-3">
-                  <Text className="font-dm-sans text-h1 text-neutral-text mb-1">
+                {/* Content */}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.text, fontSize: 14, fontWeight: "600", marginBottom: 4 }}>
                     {result.restaurant.name}
                   </Text>
-                  <View className="flex-row items-center gap-2">
-                    <Text className="text-primary text-body font-medium">★</Text>
-                    <Text className="text-body-sm text-neutral-text-secondary">
-                      {result.restaurant.rating != null
-                        ? result.restaurant.rating.toFixed(1)
-                        : "—"}{" "}
-                      • {result.restaurant.price_tier ?? "—"}
+                  <View style={{ flexDirection: "row", gap: 12, marginBottom: 8 }}>
+                    <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
+                      {result.yes_count} of {result.total} votes
                     </Text>
-                  </View>
-                </View>
-
-                {/* Address */}
-                <Text className="text-body-sm text-neutral-text-secondary mb-4">
-                  {result.restaurant.address}
-                </Text>
-
-                {/* Vote score */}
-                <View className="mb-3">
-                  <View className="flex-row justify-between items-center mb-2">
-                    <Text className="text-body-sm font-medium text-neutral-text">
-                      Agreement
-                    </Text>
-                    <Text className="text-h2 font-bold text-primary">
+                    <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
                       {result.score_pct.toFixed(0)}%
                     </Text>
+                    {result.restaurant.rating != null && (
+                      <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
+                        ★ {result.restaurant.rating.toFixed(1)}
+                      </Text>
+                    )}
                   </View>
-
-                  {/* Progress bar */}
-                  <View className="h-2 bg-neutral-surface rounded-full overflow-hidden">
+                  <View style={{ height: 2, backgroundColor: colors.progressBg, borderRadius: 1, overflow: "hidden" }}>
                     <View
-                      className="h-full bg-primary rounded-full"
-                      style={{
-                        width: `${result.score_pct}%`,
-                      }}
+                      style={{ height: "100%", backgroundColor: colors.primary, borderRadius: 1, width: `${result.score_pct}%` }}
                     />
                   </View>
-
-                  {/* Vote count */}
-                  <Text className="text-caption text-neutral-text-tertiary mt-1">
-                    {result.yes_count} of {result.total} members
-                  </Text>
-                </View>
-
-                {/* Cuisines */}
-                <View className="flex-row flex-wrap gap-2">
-                  {result.restaurant.cuisine_tags.slice(0, 3).map((cuisine) => (
-                    <View
-                      key={cuisine}
-                      className="px-2 py-1 rounded-full bg-neutral-surface-light"
-                    >
-                      <Text className="text-caption text-neutral-text-secondary">
-                        {cuisine}
-                      </Text>
-                    </View>
-                  ))}
                 </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
-        {/* Action buttons */}
-        <View className="px-4 pb-8 gap-2">
+        {/* Action */}
+        <View style={{ paddingHorizontal: 16, paddingBottom: 32, gap: 8 }}>
           <Pressable
-            className="py-3 rounded-lg items-center justify-center bg-primary"
             onPress={handleReturnHome}
+            style={{
+              paddingVertical: 14,
+              borderRadius: 10,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: colors.primary,
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
           >
             <Text className="text-white font-dm-sans text-h2">
               Start New Session

@@ -88,14 +88,15 @@ class AuthService:
     # ----- auth flows -----
 
     async def signup(self, data: UserCreate) -> tuple[User, TokenResponse]:
-        existing = await User.find_one(User.email == data.email)
+        normalized_email = data.email.lower()
+        existing = await User.find_one(User.email == normalized_email)
         if existing is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Email already registered",
             )
         user = User(
-            email=data.email,
+            email=normalized_email,
             password_hash=self.hash_password(data.password),
             name=data.name,
         )
@@ -103,7 +104,7 @@ class AuthService:
         return user, self._issue_token_pair(user.id)
 
     async def login(self, data: UserLogin) -> tuple[User, TokenResponse]:
-        user = await User.find_one(User.email == data.email)
+        user = await User.find_one(User.email == data.email.lower())
         if user is None or not self.verify_password(data.password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

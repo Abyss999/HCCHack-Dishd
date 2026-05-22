@@ -14,33 +14,32 @@
   }
 
   body {
-    @apply bg-neutral-bg text-neutral-text;
+    @apply bg-neutral-bg dark:bg-night-bg text-neutral-text dark:text-night-text;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary px-4 py-3 rounded-md text-white font-roboto font-medium text-center min-h-11;
+    @apply bg-primary px-4 py-3 rounded-[10px] text-white font-roboto font-medium text-center min-h-11;
   }
 
   .btn-secondary {
-    @apply bg-neutral-surface-light px-4 py-3 rounded-md text-white font-roboto font-medium text-center min-h-11;
+    @apply bg-transparent border border-primary px-4 py-3 rounded-[10px] text-primary font-roboto font-medium text-center min-h-11;
   }
 
   .btn-ghost {
-    @apply bg-transparent border border-neutral-border px-4 py-3 rounded-md text-white font-roboto font-medium text-center min-h-11;
+    @apply bg-transparent border border-neutral-border dark:border-night-border px-4 py-3 rounded-[10px] text-neutral-text dark:text-night-text font-roboto font-medium text-center min-h-11;
   }
 
   .card {
-    @apply bg-neutral-surface rounded-md shadow-lg p-4;
+    @apply bg-neutral-surface dark:bg-night-surface rounded-[12px] p-4;
   }
 
   .input {
-    @apply bg-neutral-surface border border-neutral-border rounded-md px-3 py-2 text-neutral-text placeholder-neutral-text-tertiary;
+    @apply bg-neutral-surface dark:bg-night-surface border rounded-[10px] px-3 py-3 text-neutral-text dark:text-night-text;
   }
 
   .chip {
-    @apply px-3 py-1 rounded-full bg-neutral-surface-light text-neutral-text text-caption font-medium;
+    @apply px-[10px] py-[6px] rounded-[8px] text-neutral-text dark:text-night-text text-caption font-medium;
   }
 }
-

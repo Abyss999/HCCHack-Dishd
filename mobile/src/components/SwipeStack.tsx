@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text } from "react-native";
 import { Restaurant } from "@/types";
 import { RestaurantCard } from "./RestaurantCard";
+import { useColors } from "@/hooks/useColors";
 
 interface SwipeStackProps {
   restaurants: Restaurant[];
@@ -14,6 +15,7 @@ export const SwipeStack: React.FC<SwipeStackProps> = ({
   onSwipe,
   onStackEmpty,
 }) => {
+  const colors = useColors();
   const [swipedIndexes, setSwipedIndexes] = useState<number[]>([]);
 
   const handleSwipeLeft = () => {
@@ -22,7 +24,6 @@ export const SwipeStack: React.FC<SwipeStackProps> = ({
     if (restaurant) {
       onSwipe(restaurant.id, "no");
       setSwipedIndexes([...swipedIndexes, currentIndex]);
-
       if (swipedIndexes.length + 1 >= restaurants.length) {
         onStackEmpty();
       }
@@ -35,7 +36,6 @@ export const SwipeStack: React.FC<SwipeStackProps> = ({
     if (restaurant) {
       onSwipe(restaurant.id, "yes");
       setSwipedIndexes([...swipedIndexes, currentIndex]);
-
       if (swipedIndexes.length + 1 >= restaurants.length) {
         onStackEmpty();
       }
@@ -47,11 +47,11 @@ export const SwipeStack: React.FC<SwipeStackProps> = ({
 
   if (remainingCount === 0) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-h1 font-dm-sans text-neutral-text">
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ color: colors.text }} className="text-h1 font-dm-sans">
           No more restaurants
         </Text>
-        <Text className="text-body-sm text-neutral-text-secondary mt-2">
+        <Text style={{ color: colors.textSecondary, marginTop: 8 }} className="text-body-sm">
           Waiting for results...
         </Text>
       </View>
@@ -59,52 +59,43 @@ export const SwipeStack: React.FC<SwipeStackProps> = ({
   }
 
   return (
-    <View className="flex-1">
-      {/* Card stack */}
-      <View className="flex-1 justify-center items-center px-4">
-        {restaurants
-          .slice(currentIndex, currentIndex + 2)
-          .map((restaurant, idx) => (
-            <View
-              key={restaurant.id}
-              className="absolute w-full max-w-sm"
-              style={{
-                zIndex: 100 - idx,
-                transform: [
-                  {
-                    scale: 1 - idx * 0.05,
-                  },
-                  {
-                    translateY: idx * 12,
-                  },
-                ],
-              }}
-            >
-              {idx === 0 ? (
-                <RestaurantCard
-                  restaurant={restaurant}
-                  onSwipeLeft={handleSwipeLeft}
-                  onSwipeRight={handleSwipeRight}
-                />
-              ) : (
-                <View
-                  className="rounded-lg overflow-hidden"
-                  style={{
-                    backgroundColor: "#262626",
-                    height: 500,
-                  }}
-                >
-                  {/* Placeholder for next card */}
-                </View>
-              )}
-            </View>
-          ))}
+    <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 16 }}>
+        {restaurants.slice(currentIndex, currentIndex + 2).map((restaurant, idx) => (
+          <View
+            key={restaurant.id}
+            style={{
+              position: "absolute",
+              width: "100%",
+              maxWidth: 384,
+              zIndex: 100 - idx,
+              transform: [{ scale: 1 - idx * 0.04 }, { translateY: idx * 10 }],
+            }}
+          >
+            {idx === 0 ? (
+              <RestaurantCard
+                restaurant={restaurant}
+                onSwipeLeft={handleSwipeLeft}
+                onSwipeRight={handleSwipeRight}
+              />
+            ) : (
+              <View
+                style={{
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.cardBorder,
+                  backgroundColor: colors.surface,
+                  height: 480,
+                }}
+              />
+            )}
+          </View>
+        ))}
       </View>
 
-      {/* Info footer */}
-      <View className="px-4 py-6 bg-neutral-surface rounded-t-lg">
-        <Text className="text-center text-body-sm text-neutral-text-secondary">
-          {remainingCount} restaurant{remainingCount !== 1 ? "s" : ""} left
+      <View style={{ paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8 }}>
+        <Text style={{ color: colors.textTertiary, textAlign: "center" }} className="text-caption">
+          {remainingCount} restaurant{remainingCount !== 1 ? "s" : ""} remaining · swipe or tap
         </Text>
       </View>
     </View>

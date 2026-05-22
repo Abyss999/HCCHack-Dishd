@@ -4,107 +4,138 @@ import {
   Text,
   Pressable,
   TextInput,
-  Alert,
   ScrollView,
   SafeAreaView,
 } from "react-native";
 import { useRouter } from "expo-router";
+import Toast from "react-native-toast-message";
 import { useAuth } from "@/hooks/useAuth";
 import { useSession } from "@/hooks/useSession";
+import { useColors } from "@/hooks/useColors";
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { tokens } = useAuth();
   const { createSession, joinSession, loading } = useSession(tokens);
+  const colors = useColors();
 
   const [showJoinCode, setShowJoinCode] = useState(false);
   const [joinCode, setJoinCode] = useState("");
 
   const handleCreateSession = async () => {
     try {
-      // For now, use a default location. In production, get user's actual location
-      const session = await createSession(40.7128, -74.006); // NYC coords as example
+      const session = await createSession(40.7128, -74.006);
       router.push(`/session/lobby?sessionId=${session.id}`);
-    } catch (error) {
-      Alert.alert("Error", "Failed to create session");
+    } catch {
+      Toast.show({ type: "error", text1: "Failed to create session", text2: "Please try again" });
     }
   };
 
-  const handleJoinSession = async () => {
-    if (!joinCode || joinCode.length !== 4) {
-      Alert.alert("Error", "Please enter a valid 4-character code");
-      return;
-    }
-
+  const handleJoinSession = async (code: string) => {
     try {
-      const session = await joinSession(joinCode.toUpperCase());
+      const session = await joinSession(code.toUpperCase());
       router.push(`/session/lobby?sessionId=${session.id}`);
-    } catch (error) {
-      Alert.alert("Error", "Failed to join session. Check the code and try again.");
+    } catch {
+      Toast.show({ type: "error", text1: "Couldn't join session", text2: "Check the code and try again" });
+    }
+  };
+
+  const handleCodeChange = (text: string) => {
+    const upper = text.toUpperCase().slice(0, 4);
+    setJoinCode(upper);
+    if (upper.length === 4) {
+      handleJoinSession(upper);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-bg">
-      <ScrollView className="flex-1">
-        {/* Header with user info */}
-        <View className="px-4 pt-6 pb-8 flex-row justify-between items-center">
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView style={{ flex: 1 }}>
+        {/* Header */}
+        <View style={{
+          paddingHorizontal: 16,
+          paddingTop: 20,
+          paddingBottom: 14,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottomWidth: 1,
+          borderBottomColor: "rgba(255,255,255,0.06)",
+          marginBottom: 16,
+        }}>
           <View>
-            <Text className="font-dm-sans text-h1 text-neutral-text">
+            <Text style={{ color: colors.text, fontFamily: "DM Sans", fontSize: 15, fontWeight: "600" }}>
               Welcome back
             </Text>
-            <Text className="text-body-sm text-neutral-text-secondary">
+            <Text style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>
               {user?.name}
             </Text>
           </View>
           <Pressable
             onPress={logout}
-            className="px-3 py-2 rounded-md border border-neutral-border"
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 6,
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.2)",
+            }}
           >
-            <Text className="text-caption text-neutral-text-secondary">
+            <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
               Logout
             </Text>
           </Pressable>
         </View>
 
         {/* Main actions */}
-        <View className="px-4 gap-3 py-6">
-          {/* Create session button */}
+        <View style={{ paddingHorizontal: 16, gap: 12, paddingBottom: 24 }}>
           <Pressable
             onPress={handleCreateSession}
             disabled={loading}
-            className={`py-6 rounded-lg items-center justify-center ${
-              loading ? "opacity-50" : ""
-            }`}
             style={{
-              backgroundColor: "#d97757",
+              paddingVertical: 24,
+              borderRadius: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: colors.primary,
+              opacity: loading ? 0.5 : 1,
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 4,
             }}
           >
             <Text className="font-dm-sans text-h2 text-white mb-1">
               {loading ? "Creating..." : "Create Session"}
             </Text>
-            <Text className="text-body-sm text-white/70">
+            <Text style={{ color: "rgba(255,255,255,0.7)" }} className="text-body-sm">
               Start a new group decision
             </Text>
           </Pressable>
 
-          {/* Divider */}
-          <View className="flex-row items-center gap-3 my-2">
-            <View className="flex-1 h-px bg-neutral-border" />
-            <Text className="text-caption text-neutral-text-tertiary">or</Text>
-            <View className="flex-1 h-px bg-neutral-border" />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 8 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+            <Text style={{ color: colors.textTertiary }} className="text-caption">or</Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
           </View>
 
-          {/* Join session button */}
           <Pressable
             onPress={() => setShowJoinCode(!showJoinCode)}
-            className="py-6 rounded-lg items-center justify-center border border-primary"
+            style={{
+              paddingVertical: 24,
+              borderRadius: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1.5,
+              borderColor: colors.primary,
+            }}
           >
             <Text className="font-dm-sans text-h2 text-primary mb-1">
               Join Session
             </Text>
-            <Text className="text-body-sm text-primary/70">
+            <Text style={{ color: colors.primary + "b3" }} className="text-body-sm">
               Enter a 4-digit code
             </Text>
           </Pressable>
@@ -112,68 +143,62 @@ export default function HomeScreen() {
 
         {/* Join code input */}
         {showJoinCode && (
-          <View className="px-4 py-6 gap-3">
-            <Text className="text-body-sm text-neutral-text-secondary">
+          <View style={{ paddingHorizontal: 16, paddingVertical: 24, gap: 12 }}>
+            <Text style={{ color: colors.textSecondary }} className="text-body-sm">
               Enter the 4-character session code
             </Text>
             <TextInput
               placeholder="XXXX"
-              placeholderTextColor="#808080"
+              placeholderTextColor={colors.placeholderText}
               value={joinCode}
-              onChangeText={(text) =>
-                setJoinCode(text.toUpperCase().slice(0, 4))
-              }
+              onChangeText={handleCodeChange}
               maxLength={4}
+              autoFocus
               editable={!loading}
               style={{
-                color: "#ffffff",
+                color: colors.text,
                 fontFamily: "IBM Plex Mono",
                 fontSize: 24,
                 letterSpacing: 8,
                 paddingVertical: 12,
                 paddingHorizontal: 12,
-                borderRadius: 8,
-                backgroundColor: "#262626",
-                borderWidth: 1,
-                borderColor: "#d97757",
+                borderRadius: 10,
+                backgroundColor: colors.inputBg,
+                borderWidth: 1.5,
+                borderColor: colors.primary,
                 textAlign: "center",
               }}
             />
-            <Pressable
-              onPress={handleJoinSession}
-              disabled={loading || joinCode.length !== 4}
-              className={`py-3 rounded-md items-center justify-center ${
-                loading || joinCode.length !== 4 ? "opacity-50" : ""
-              }`}
-              style={{
-                backgroundColor: "#d97757",
-              }}
-            >
-              <Text className="text-white font-roboto font-medium text-body">
-                {loading ? "Joining..." : "Join"}
+            {loading && (
+              <Text style={{ color: colors.textSecondary, textAlign: "center" }} className="text-body-sm">
+                Joining...
               </Text>
-            </Pressable>
+            )}
           </View>
         )}
 
-        {/* Quick tips */}
-        <View className="px-4 py-8 gap-3">
-          <Text className="text-body-sm font-medium text-neutral-text-secondary">
-            How it works
-          </Text>
-          <View className="gap-2">
-            <Text className="text-body-sm text-neutral-text-tertiary">
-              • Create or join a session with friends
+        {/* How it works */}
+        <View style={{ paddingHorizontal: 16, paddingBottom: 32 }}>
+          <View style={{
+            backgroundColor: "rgba(217, 119, 87, 0.06)",
+            borderLeftWidth: 3,
+            borderLeftColor: "rgba(217, 119, 87, 0.4)",
+            borderRadius: 6,
+            padding: 14,
+          }}>
+            <Text style={{ color: "rgba(217, 119, 87, 0.9)", fontSize: 12, fontWeight: "600", marginBottom: 8 }}>
+              How it works
             </Text>
-            <Text className="text-body-sm text-neutral-text-tertiary">
-              • Swipe yes/no on nearby restaurants
-            </Text>
-            <Text className="text-body-sm text-neutral-text-tertiary">
-              • Instant match when everyone agrees
-            </Text>
-            <Text className="text-body-sm text-neutral-text-tertiary">
-              • See the top 3 options otherwise
-            </Text>
+            {[
+              "Create or join a session with friends",
+              "Swipe yes/no on nearby restaurants",
+              "Instant match when everyone agrees",
+              "See the top 3 options otherwise",
+            ].map((tip, i) => (
+              <Text key={tip} style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, lineHeight: 18, marginBottom: i < 3 ? 4 : 0 }}>
+                • {tip}
+              </Text>
+            ))}
           </View>
         </View>
       </ScrollView>
