@@ -81,7 +81,7 @@ HCCHack/
 
 ```bash
 # from backend/
-docker compose up -d                    # mongo + mongo-express
+docker compose up -d                    # mongo + mongo-express (only needed for local target)
 pip install -r requirements.txt
 cp .env.example .env                    # then fill values
 uvicorn main:app --reload               # http://localhost:8000/docs
@@ -89,6 +89,21 @@ uvicorn main:app --reload               # http://localhost:8000/docs
 # from mobile/
 npx expo start
 ```
+
+## MongoDB target switching
+
+The backend supports two Mongo targets, toggled by a single env var in `backend/.env`:
+
+| `MONGO_TARGET` | URL used | When to use |
+|---|---|---|
+| `local` (default) | `MONGO_URL_LOCAL` (`mongodb://localhost:27017`) | Local dev with Docker Compose |
+| `atlas` | `MONGO_URL_ATLAS` | Shared Atlas cluster, no Docker needed |
+
+**To switch to Atlas:** set `MONGO_TARGET=atlas` in `.env`. The Atlas cluster is `hackhcc.k4x55rs.mongodb.net` (`HackHCC` app). Credentials are already in `.env`.
+
+**To go back to local:** set `MONGO_TARGET=local` and make sure `docker compose up -d` is running.
+
+`config.py` exposes a `@property mongo_url` that resolves the active URL; `database.py` consumes it — no other files need changing when switching targets.
 
 ## Security model
 
@@ -142,6 +157,29 @@ All security primitives live in `backend/security.py` and are wired in `main.py`
 - **Swipe phase** has a soft floor of 5 and a hard ceiling of 10 swipes per user before Top 3 is forced.
 - **Email normalization** — always `.lower()` emails before DB reads/writes (`AuthService.signup` and `AuthService.login`). The mobile layer also trims and lowercases before sending so the backend never sees mixed-case addresses.
 - **Mobile text inputs** — email fields must have `autoCapitalize="none"` `autoCorrect={false}` `autoComplete="email"` `textContentType="emailAddress"`. Password fields use `textContentType="password"` (login) or `textContentType="newPassword"` (signup) with matching `autoComplete` values. Frontend password min-length must match the backend schema (`min_length=8`).
+
+## UI design system
+
+The mobile design is dark-first, warm coral (`#d97757`) primary, referencing `/Users/nosaj/Downloads/DishMatch Redesign Standalone.html` as the visual source of truth.
+
+**Color tokens** live in two places that must stay in sync:
+- `mobile/tailwind.config.js` — Tailwind theme (used for `className` utilities)
+- `mobile/src/hooks/useColors.ts` — imperative `LIGHT`/`DARK` objects (used for inline `style={}`)
+
+Key dark-mode values: `bg: #0a0a0a`, `surface: #1a1a1a`, `surfaceLight: #262626`. New tokens added: `cardBorder`, `chipBg`, `chipBorder`, `progressBg` — all primary-tinted rgba values.
+
+**Component patterns (match the HTML design):**
+- **Buttons** — primary uses `borderRadius: 10`, `paddingVertical: 14`, coral shadow (`shadowColor: primary, opacity: 0.3`). No `expo-linear-gradient` installed; use solid primary color.
+- **Cards** — `borderRadius: 12`, `borderWidth: 1`, `borderColor: colors.cardBorder`.
+- **Chips/tags** — `borderRadius: 8`, `chipBg` + `chipBorder`, never use pill shape (`borderRadius: 999`) for preference chips.
+- **Inputs** — `borderRadius: 10`, `fontFamily: IBM Plex Mono`, `borderColor: colors.inputBorder` (primary at ~25% opacity).
+- **Progress bars** — `height: 3`, `backgroundColor: colors.progressBg` track, primary fill.
+- **Restaurant card** — has both swipe gestures AND visible Pass/Like buttons at the bottom of the info section.
+- **Results list** — compact flat list with 40×40 square rank badges (medal emoji 🥇🥈🥉) and a slim 2px agreement bar. No full image cards.
+- **Profile section titles** — `fontSize: 11, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase"`, muted `rgba(255,255,255,0.5)`.
+- **CodeDisplay boxes** — 50×50, `borderColor: rgba(217,119,87,0.4)`, IBM Plex Mono 18px primary text.
+- **Home header** — compact with `borderBottomColor: rgba(255,255,255,0.06)` divider.
+- **"How it works" tips** — left-border accent block: `borderLeftWidth: 3, borderLeftColor: rgba(217,119,87,0.4)`, warm-tinted bg.
 
 ## Pointers
 

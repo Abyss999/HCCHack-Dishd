@@ -11,8 +11,19 @@ class Settings(BaseSettings):
     environment: Literal["development", "staging", "production"] = "development"
 
     # Mongo
-    mongo_url: str = "mongodb://localhost:27017"
+    # Set MONGO_TARGET=atlas to use Atlas, MONGO_TARGET=local (default) for Docker.
+    mongo_target: Literal["local", "atlas"] = "local"
+    mongo_url_local: str = "mongodb://localhost:27017"
+    mongo_url_atlas: str = ""
     mongo_db_name: str = "dishmatch"
+
+    @property
+    def mongo_url(self) -> str:
+        if self.mongo_target == "atlas":
+            if not self.mongo_url_atlas:
+                raise ValueError("MONGO_TARGET=atlas but MONGO_URL_ATLAS is not set")
+            return self.mongo_url_atlas
+        return self.mongo_url_local
 
     # JWT
     jwt_secret: str = "change-me-in-env"
