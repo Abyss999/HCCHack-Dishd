@@ -1,0 +1,6 @@
+Target dependency graph (3 targets)
+Target 'DishMatch' in project 'DishMatch'
+➜ Explicit dependency on target 'Nuke' in project 'Nuke'
+Target 'Nuke' in project 'Nuke'
+➜ Explicit dependency on target 'Nuke' in project 'Nuke'
+Target 'Nuke' in project 'Nuke' (no dependencies)

@@ -12,7 +12,11 @@ class MatchingService:
     welfare function over Atlas Vector Search.
     """
 
-    SWIPE_CEILING = 10  # forced top-3 reveal once every member has hit this many swipes
+    SWIPE_CEILING = 10  # forced top-3 reveal once every member has hit this many swipes (per session it can be overridden via session.swipe_ceiling_override)
+
+    @staticmethod
+    def ceiling_for(session: Session) -> int:
+        return session.swipe_ceiling_override or MatchingService.SWIPE_CEILING
 
     async def count_user_swipes(self, session_id: UUID, user_id: UUID) -> int:
         return await Swipe.find(
@@ -23,6 +27,10 @@ class MatchingService:
     async def check_instant_match(self, session: Session) -> Restaurant | None:
         member_count = len(session.members)
         if member_count == 0:
+            return None
+        # Non-solo sessions need at least 2 members for an "instant match" to be meaningful —
+        # otherwise the host gets a match on their very first yes while waiting for friends.
+        if not session.solo_mode and member_count < 2:
             return None
         pipeline = [
             {"$match": {"session_id": session.id, "direction": "yes"}},
@@ -64,9 +72,10 @@ class MatchingService:
         return results
 
     async def all_members_done(self, session: Session) -> bool:
+        ceiling = self.ceiling_for(session)
         for member in session.members:
             count = await self.count_user_swipes(session.id, member.user_id)
-            if count < self.SWIPE_CEILING:
+            if count < ceiling:
                 return False
         return True
 

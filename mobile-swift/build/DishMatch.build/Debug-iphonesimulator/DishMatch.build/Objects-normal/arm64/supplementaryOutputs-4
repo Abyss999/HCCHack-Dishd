@@ -1,0 +1,30 @@
+{
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Core/Auth/KeychainService.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/KeychainService.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/KeychainService.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/KeychainService.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/KeychainService.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/KeychainService.swiftdeps"
+  },
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/ViewModels/HomeViewModel.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/HomeViewModel.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/HomeViewModel.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/HomeViewModel.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/HomeViewModel.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/HomeViewModel.swiftdeps"
+  },
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Views/Auth/LoginView.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/LoginView.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/LoginView.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/LoginView.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/LoginView.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/LoginView.swiftdeps"
+  },
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Views/Session/LobbyView.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/LobbyView.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/LobbyView.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/LobbyView.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/LobbyView.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/LobbyView.swiftdeps"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Core/Notifications/PushNotificationService.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/PushNotificationService.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/PushNotificationService.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/PushNotificationService.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/PushNotificationService.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/PushNotificationService.swiftdeps"
+  },
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Models/Restaurant.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/Restaurant.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/Restaurant.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/Restaurant.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/Restaurant.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/Restaurant.swiftdeps"
+  },
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Views/Components/RestaurantCardView.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/RestaurantCardView.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/RestaurantCardView.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/RestaurantCardView.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/RestaurantCardView.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/x86_64/RestaurantCardView.swiftdeps"
+  }
+}

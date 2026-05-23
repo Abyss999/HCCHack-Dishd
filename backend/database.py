@@ -10,7 +10,11 @@ class Database:
     @classmethod
     async def connect(cls) -> None:
         settings = get_settings()
-        cls.client = AsyncIOMotorClient(settings.mongo_url, uuidRepresentation="standard")
+        cls.client = AsyncIOMotorClient(
+            settings.mongo_url,
+            uuidRepresentation="standard",
+            tz_aware=True,
+        )
         await init_beanie(
             database=cls.client[settings.mongo_db_name],
             document_models=cls._document_models(),
@@ -49,6 +53,12 @@ class Database:
             from models.swipe import Swipe  # noqa: WPS433
 
             models.append(Swipe)
+        except ImportError:
+            pass
+        try:
+            from models.place_search_cache import PlaceSearchCache  # noqa: WPS433
+
+            models.append(PlaceSearchCache)
         except ImportError:
             pass
         return models

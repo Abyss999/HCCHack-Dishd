@@ -1,0 +1,23 @@
+{
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Models/Swipe.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/Swipe.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/Swipe.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/Swipe.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/Swipe.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/Swipe.swiftdeps"
+  },
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Views/Components/SwipeStackView.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/SwipeStackView.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/SwipeStackView.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/SwipeStackView.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/SwipeStackView.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/SwipeStackView.swiftdeps"
+  },
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Views/Session/SwipeView.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/SwipeView.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/SwipeView.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/SwipeView.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/SwipeView.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/SwipeView.swiftdeps"
+  }
+}

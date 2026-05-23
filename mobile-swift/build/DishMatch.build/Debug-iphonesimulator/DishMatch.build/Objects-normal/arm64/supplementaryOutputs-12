@@ -1,0 +1,23 @@
+{
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/ViewModels/ResultsViewModel.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/ResultsViewModel.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/ResultsViewModel.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/ResultsViewModel.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/ResultsViewModel.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/ResultsViewModel.swiftdeps"
+  },
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Views/Session/ResultsView.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/ResultsView.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/ResultsView.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/ResultsView.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/ResultsView.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/ResultsView.swiftdeps"
+  },
+  "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/DishMatch/Views/Tabs/RootTabView.swift" : {
+    "const-values" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/RootTabView.swiftconstvalues",
+    "dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/RootTabView.d",
+    "diagnostics" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/RootTabView.dia",
+    "object" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/RootTabView.o",
+    "swift-dependencies" : "/Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile-swift/build/DishMatch.build/Debug-iphonesimulator/DishMatch.build/Objects-normal/arm64/RootTabView.swiftdeps"
+  }
+}

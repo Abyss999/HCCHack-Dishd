@@ -14,3 +14,4 @@ class RestaurantOut(BaseModel):
     address: str | None
     lat: float
     lng: float
+    description: str | None = None

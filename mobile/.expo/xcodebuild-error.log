@@ -1,0 +1,6 @@
+2026-05-22 16:07:19.581 xcodebuild[51423:27421927] Writing error result bundle to /var/folders/lz/vpky489x1ss87kzdzwpyfk_40000gn/T/ResultBundle_2026-22-05_16-07-0019.xcresult
+xcodebuild: error: Unable to find a destination matching the provided destination specifier:
+		{ id:BA501764-0781-448D-865F-BBFFEBBE2463 }
+
+	Ineligible destinations for the "DishMatch" scheme:
+		{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device, error:iOS 26.5 is not installed. Please download and install the platform from Xcode > Settings > Components. }

@@ -1,19 +1,19 @@
 # DishMatch
 
-Group restaurant decision app. Friends join a session via a 4-digit code, swipe yes/no on nearby restaurants, and the app either declares an **instant match** (every member said yes to the same place) or a **Top 3** leaderboard ranked by yes-count percentage.
+Group restaurant decision app. Friends join a session via a 4-digit code, swipe yes/no on nearby restaurants, and the app either declares an **instant match** (every member said yes to the same place) or a **Top 3** leaderboard ranked by yes-count percentage. Also supports **solo mode** — one user swipes alone to get a personal top pick.
 
 ## Stack
 
 | Layer | Tech |
 |---|---|
-| Mobile | React Native (Expo) + NativeWind |
+| Mobile | SwiftUI (iOS 16+) |
 | Backend | FastAPI (Python, async) |
 | Database | MongoDB |
 | ODM | Beanie (Motor + Pydantic) |
 | Auth | JWT access + refresh via `python-jose`, bcrypt via `passlib` |
 | Realtime | FastAPI WebSockets |
 | Restaurants | Google Places API |
-| Push | Expo Push API |
+| Push | APNs (UNUserNotificationCenter) |
 | Local dev | Docker Compose (mongo + mongo-express) |
 | Production target | DigitalOcean (App Platform or Droplet running the same container stack) |
 
@@ -51,19 +51,26 @@ HCCHack/
 │   ├── Dockerfile
 │   ├── .env.example
 │   └── requirements.txt
-└── mobile/
-    ├── src/
-    │   ├── app/                     # expo-router file-based routing
-    │   │   ├── (tabs)/              # bottom tab navigator (index, profile)
-    │   │   ├── auth/                # login.tsx, signup.tsx
-    │   │   ├── session/             # lobby.tsx, swipe.tsx, results.tsx
-    │   │   └── _layout.tsx          # root layout + auth gate
-    │   ├── components/              # RestaurantCard, SwipeStack, MatchModal, etc.
-    │   ├── context/                 # React context providers
-    │   ├── hooks/                   # useAuth, useColors, etc.
-    │   └── global.css               # NativeWind global styles
-    ├── tailwind.config.js
-    └── package.json
+└── mobile-swift/                    # SwiftUI iOS app (iOS 16+)
+    ├── DishMatch.xcodeproj
+    ├── project.yml                  # xcodegen spec
+    └── DishMatch/
+        ├── App/                     # DishMatchApp, AppDelegate, ContentCoordinator + navigators
+        ├── Core/
+        │   ├── Auth/                # AuthStore (@ObservableObject), KeychainService
+        │   ├── Network/             # APIClient (URLSession), NetworkError
+        │   ├── WebSocket/           # WebSocketService (URLSessionWebSocketTask, auto-reconnect)
+        │   ├── Notifications/       # PushNotificationService (APNs)
+        │   └── Theme/               # AppTheme (30+ tokens), ThemeStore
+        ├── Models/                  # Codable structs: User, Session, Restaurant, Swipe, WSEvent
+        ├── ViewModels/              # @ObservableObject: Auth, Home, Session, Swipe, Results, Profile
+        ├── Views/
+        │   ├── Auth/                # LoginView, SignupView
+        │   ├── Tabs/                # RootTabView, HomeView, ProfileView
+        │   ├── Session/             # LobbyView, SwipeView, ResultsView, MatchOverlay (confetti)
+        │   └── Components/          # RestaurantCard (DragGesture), SwipeStack, CodeDisplay, etc.
+        ├── Config/                  # Config.swift + Debug/Release xcconfig (API_BASE_URL)
+        └── Resources/               # Assets.xcassets, Info.plist
 ```
 
 ## Architectural decisions
@@ -72,8 +79,19 @@ HCCHack/
 - **OOP throughout the backend** — business logic lives in service classes (`AuthService`, `SessionService`, `MatchingService`, `PlacesService`, `NotificationService`, `ConnectionManager`). Routers stay thin: parse request → call service → return schema.
 - **UUIDs for every ID**, not Mongo ObjectIds.
 - **Document shape:** embed bounded sub-docs (`UserPreferences`, `PushToken[]` inside `User`; `SessionMember[]` inside `Session`). Separate collections for unbounded data (`swipes`, `restaurants`).
-- **Cache restaurants** — never call Google Places per-swipe. Upsert into the `restaurants` collection keyed by `google_place_id`.
+- **Cache restaurants** — never call Google Places per-swipe. Upsert into the `restaurants` collection keyed by `google_place_id`. The Places API query always uses `type=restaurant`; `PlacesService.nearby_search` additionally filters out any result whose `types` list contains `lodging`, `hotel`, `motel`, or `casino` before upserting.
+- **Cache nearby-search results too** — `PlaceSearchCache` (`models/place_search_cache.py`) memoizes the entire `nearby_search` *query result* keyed by `sha256(round(lat, 3) | round(lng, 3) | radius_m | sorted(cuisines) | max_price_level)`. Lat/lng rounded to 3 decimals (~110 m bucket) so nearby calls share an entry. TTL is 6 hours via a Mongo `expireAfterSeconds=0` index on `expires_at`. The cache stores `restaurant_ids: [UUID]`; cold-path lookups rehydrate via `Restaurant.get(rid)`. The cache is intentionally *separate* from the `restaurants` collection: documents are still individually fresh (each cold-path call still upserts them), but the *which-IDs-to-return-for-this-query* mapping is cached. If a cached restaurant doc is missing, we fall through to refetch rather than returning a hole.
+- **Restaurant description** — `Restaurant.description: str | None` holds the Places Details `editorial_summary.overview` text. `PlacesService._fetch_description(place_id)` makes a single Places Details call with `fields=editorial_summary` (cheapest field set) on first-time upsert, then is back-filled for previously cached restaurants that don't have one. Failures are swallowed and return `None` — a missing description never blocks a card from rendering. **Truncated server-side at 180 chars with ellipsis on a word boundary** so the client never has to deal with novel-length text. Surfaced on `RestaurantCardView` (2-line clamp, tail truncation) and on `ResultsView` rows (2-line clamp, tertiary text). Belt-and-suspenders: client clamps even if the server limit is loosened later.
+- **Mock restaurant fallback** — `GET /restaurants?session_id=…` returns a hardcoded NYC list (`_MOCK_RESTAURANTS` in `routers/restaurants.py`) when **any** of: (a) the `?mock=true` query param is set, (b) `USE_MOCK_RESTAURANTS=true` in env, or (c) `GOOGLE_PLACES_API_KEY` is missing. The Swift `SwipeViewModel.load` races the real fetch against a 20s timer and, on failure or timeout, fires a `Task.detached` retry with `?mock=true` so the user never sees an empty stack. The detached task is intentional — the SwipeView's `.task` lifecycle was cancelling the in-place fallback when the create-session sheet→fullScreenCover transition re-mounted the view. `SessionViewModel.fetchRestaurants` also clears `restaurants` at the start of each call so stale data from a previous session can't bleed through on a failed fetch.
 - **WebSocket auth** — JWT passed as `?token=` query param; `ConnectionManager` keeps `dict[session_id, dict[user_id, WebSocket]]`.
+- **No lobby — all sessions auto-start in `"swiping"`.** Both solo and group sessions are created in `status="swiping"` (see `SessionService.create`). The host can swipe immediately; other members can still `join` while the session is in `"swiping"` (the join guard accepts both `"lobby"` and `"swiping"`). The 4-digit share code is displayed inline in the `SwipeView` header (tap to copy). `LobbyView` is no longer wired into navigation — `SessionNavigator` mounts `SwipeView` directly regardless of `solo_mode`. `Session.solo_mode` still drives results-screen copy ("Your top picks" vs "Your group's top picks") and gates instant-match (see below).
+- **Instant-match gating** — `MatchingService.check_instant_match` returns `None` for non-solo sessions with fewer than 2 members. This prevents the host from triggering an "instant match" on their first yes while waiting for friends to join. Solo sessions (`solo_mode=true`, `member_count=1`) still match on the first yes by design.
+- **Leave vs delete** — `POST /sessions/{id}/leave` removes the calling user from `members`. If they were the host, the earliest-joined remaining member is promoted to host. If they were the last member, the session and its swipes are deleted. `DELETE /sessions/{id}` is host-only and tears down the session + all its swipes for everyone. Both endpoints live in `SessionService.leave` / `SessionService.delete`. The router broadcasts a `member_joined` envelope with `{"left": true}` on a non-deleting leave so connected clients can update presence (no dedicated `member_left` event type yet).
+- **Session history** — `GET /users/me/sessions` returns the last 20 sessions the current user has been a member of, sorted newest-first. The history lives in its own tab (`HistoryView`, left of Home) — `HomeView` no longer renders past sessions. Each row supports a context-menu **Leave** (`POST /sessions/{id}/leave`) and, if the user is the host, **Delete for everyone** (`DELETE /sessions/{id}`). Leaving as the host promotes the earliest-joined remaining member; leaving as the last member deletes the session and its swipes. Tapping a row re-opens the session via `SessionNavigator` in the History tab's own `fullScreenCover`.
+- **Tab order** — `RootTabView` is `History | Home | Profile`, but the default `selection` is **Home** (`tag(1)`) so first launch lands there. SF Symbols: `clock.arrow.circlepath | house.fill | person.fill`.
+- **History filters + clear all** — `HistoryView` has two filter rows: status (`All | Lobby | Swiping | Results | Matched | Solo | Group`) and date (`Any time | Today | Past week | Past month`). They compose — the trash button clears only what's *currently visible* given both filters. The confirm dialog title interpolates the active filters (e.g. "Clear 4 swiping / today sessions?") and runs `HistoryViewModel.clearAll(filteredSessions)` — *deletes* sessions where the user is host, *leaves* the rest. Per-row swipe actions live in a `List` (swipeActions only works in `List`): trailing-edge **Delete** (host only, red) and **Leave** (orange). Context-menu duplicates remain available for long-press.
+- **Swipe ceiling override** — `Session.swipe_ceiling_override: int | None` (3–30, schema-validated) lets each session set its own forced-top-3 threshold instead of the global `MatchingService.SWIPE_CEILING = 10`. `MatchingService.ceiling_for(session)` is the single read site; both `all_members_done` and the laggard-nudge helper in `routers/swipes.py` go through it. The mobile sheet exposes this as a slider (3–30, step 1) in `CreateSessionSheet`.
+- **Profile layout + multi-select budget** — `ProfileView` is laid out as a header card + a single "Preferences" card grouping (dietary, cuisines, budget, max distance) + an Appearance card + actions. Sections are visually separated by `theme.textSecondary.opacity(0.12)` 1pt rules — no nested cards. Distance is a continuous `Slider` (1.6–80 km, step 0.8) displayed in miles. **Budget is multi-select** in `ProfileViewModel.budgetRanges: [String]`; `savePreferences()` collapses to the max via `Self.budgetOrder` and sends a single `budget_range` to the backend (the schema stays single-value).
 - **AI/vector matching is deferred.** Phase 1 ships simple aggregation-based matching. A later phase will add Gemini embeddings + MongoDB Atlas Vector Search; config is structured so the Atlas swap is just an env var change.
 - **Containerization first.** No host-path assumptions, all config via env vars, single `Dockerfile` for the API — so DigitalOcean deploy is a non-event later.
 
@@ -84,10 +102,11 @@ HCCHack/
 docker compose up -d                    # mongo + mongo-express (only needed for local target)
 pip install -r requirements.txt
 cp .env.example .env                    # then fill values
-uvicorn main:app --reload               # http://localhost:8000/docs
+uvicorn main:app --reload --port 8001   # http://localhost:8001/docs
 
-# from mobile/
-npx expo start
+# mobile: open in Xcode
+open mobile-swift/DishMatch.xcodeproj  # then Cmd+R to run on simulator
+# API_BASE_URL in mobile-swift/DishMatch/Config/Debug.xcconfig points to localhost:8001
 ```
 
 ## MongoDB target switching
@@ -126,6 +145,8 @@ All security primitives live in `backend/security.py` and are wired in `main.py`
 - `RATE_LIMIT_PUSH_TOKEN` — 10/min
 - `RATE_LIMIT_ENABLED=false` disables everything for local debugging
 
+`POST /sessions/{id}/start`, `POST /sessions/{id}/leave`, and `DELETE /sessions/{id}` all reuse `RATE_LIMIT_SESSION_CREATE`/`_JOIN` — they're mutation endpoints that should not be hammerable.
+
 **Startup checks (`perform_startup_checks`):** in `ENVIRONMENT=production` the app *refuses to boot* if `JWT_SECRET` is the placeholder or shorter than 32 chars, or if `CORS_ORIGINS` contains `*`. In dev, the same conditions log a warning.
 
 **Input hardening:**
@@ -146,8 +167,21 @@ All security primitives live in `backend/security.py` and are wired in `main.py`
 
 **Token storage:** access tokens are 30 minutes by default; refresh tokens 30 days. Token `type` claim is checked on decode so a refresh token can never be used as access.
 
+## Known gotchas
+
+- **`score_pct` is already a percentage (0–100)**, not a fraction. `MatchingService.get_top_3` returns `round(yes/total*100)`. Don't multiply by 100 again in the UI — `ResultsView` displays `Int(result.scorePct)%` directly.
+- **Beanie + UUIDs**: UUID fields are stored as BSON Binary subtype 4. Raw-dict queries on UUID values must pass the `UUID` object, not `str(uuid)`, or nothing matches. See `SessionService.get_user_sessions` for the canonical pattern.
+- **Match-popup / results-navigation dedupe**: `SwipeViewModel` guards `triggerMatch` with `didShowMatch` and `requestNavigateToResults` with `didNavigateToResults`. The swipe ack and the WS `instant_match` event both fire for the same yes; the WS `phase_change`, `top3_ready`, and the `MatchOverlay` dismiss can all independently request the results push. Always route through those guarded methods rather than mutating `showMatch`/`navigateToResults` directly.
+- **SwipeStackView width**: both the peek card and the top card explicitly set `.frame(maxWidth: .infinity)`, and `RestaurantCardView`'s body does the same. Without these, the ZStack collapses to intrinsic content width and the card visibly resizes between cards (especially when only one card remains).
+- **RestaurantCardView clipping**: the card body has `.clipped()` *before* the corner radius/shadow, the photo uses a fixed `.frame(height: 280)` (not `maxHeight`), and the restaurant name is `.lineLimit(1).truncationMode(.tail)` with `Spacer(minLength: 8)` and `.fixedSize()` on the price tier. Without all three, a long name or an AsyncImage with a tall intrinsic aspect would visibly push the card past the screen edge — text near the leading edge gets cut off, which looks like "the card turned wide."
+- **SwipeStackView GeometryReader**: the stack uses a `GeometryReader` with an explicit outer `.frame(height: 540)` and pins both the peek card and the top card to `width: geo.size.width, height: 520`. Without GeometryReader, `maxWidth: .infinity` could be interpreted differently by intermediate parents during transient layout passes (especially mid-animation), and the card would size to AsyncImage's intrinsic dimensions instead of the container.
+- **Results back = `onClose` callback, NOT `dismiss()`**: `@Environment(\.dismiss)` inside a `NavigationStack`-pushed view *pops the nav*, not the fullScreenCover — so calling `dismiss()` directly from `ResultsView` would land back on the stale `SwipeView`, re-run its `.task`, get a 500/timeout, trigger the mock NYC fallback, and the next swipe would 409 with "Session is in 'results', not swiping". The cure: `SessionNavigator` owns the `@Environment(\.dismiss)` (it's the cover's root), and passes `onClose: { dismiss() }` down to `ResultsView`. The back button and the "Start New Session" button both call `onClose()`. This is the canonical pattern for any deep view that needs to close the entire cover.
+- **`await` inside comprehensions / generators**: `[await foo(x) for x in xs]` is *valid* async comprehension but serial — fine for short lists, but use `await asyncio.gather(*(foo(x) for x in xs))` for any membership-sized fan-out (e.g. fetching all session members' `User` docs in `routers/restaurants.py` and `notification_service.py`). The truly broken form is `[r for r in (await foo(x) for x in xs)]` — a *parenthesized* generator expression returns an async generator that the outer comp can't iterate with sync `for`; that's a runtime 500. The `PlaceSearchCache` cache-hit path was rewritten as an explicit `for ... await` loop to avoid this trap.
+- **`APIClient.delete` and 204 responses**: `request<T>` checks `data.isEmpty` and returns an `_EmptyResponse()` placeholder when `T == _EmptyResponse`. Endpoints returning `204 No Content` (leave, delete) must be called via `APIClient.delete(...)` or by typing the response as `_EmptyResponse`, otherwise `JSONDecoder` will throw on the empty body.
+
 ## Conventions
 
+- **Haptics** — use `UIImpactFeedbackGenerator` and `UINotificationFeedbackGenerator` inline at call sites (no wrapper class needed). Like swipe/button → `.medium`; Pass swipe/button → `.light`; copy code → `.rigid`. Haptics are suppressed by the simulator (see Simulator noise table).
 - **Async everywhere on the backend** — Motor + Beanie are async; never use sync DB calls.
 - **Service classes own business logic.** A router function should be ~5 lines: validate inputs, call a service method, return a response schema.
 - **One Beanie `Document` per collection.** Indexes go in the `Settings` inner class.
@@ -162,24 +196,41 @@ All security primitives live in `backend/security.py` and are wired in `main.py`
 
 The mobile design is dark-first, warm coral (`#d97757`) primary, referencing `/Users/nosaj/Downloads/DishMatch Redesign Standalone.html` as the visual source of truth.
 
-**Color tokens** live in two places that must stay in sync:
-- `mobile/tailwind.config.js` — Tailwind theme (used for `className` utilities)
-- `mobile/src/hooks/useColors.ts` — imperative `LIGHT`/`DARK` objects (used for inline `style={}`)
+**Color tokens** live in `mobile-swift/DishMatch/Core/Theme/AppTheme.swift` (30+ tokens, dark-first).
 
-Key dark-mode values: `bg: #0a0a0a`, `surface: #1a1a1a`, `surfaceLight: #262626`. New tokens added: `cardBorder`, `chipBg`, `chipBorder`, `progressBg` — all primary-tinted rgba values.
+Key dark-mode values: `bg: #0a0a0a`, `surface: #1a1a1a`, `surfaceLight: #262626`. Tokens include `cardBorder`, `chipBg`, `chipBorder`, `progressBg` — all primary-tinted rgba values.
 
 **Component patterns (match the HTML design):**
-- **Buttons** — primary uses `borderRadius: 10`, `paddingVertical: 14`, coral shadow (`shadowColor: primary, opacity: 0.3`). No `expo-linear-gradient` installed; use solid primary color.
-- **Cards** — `borderRadius: 12`, `borderWidth: 1`, `borderColor: colors.cardBorder`.
-- **Chips/tags** — `borderRadius: 8`, `chipBg` + `chipBorder`, never use pill shape (`borderRadius: 999`) for preference chips.
-- **Inputs** — `borderRadius: 10`, `fontFamily: IBM Plex Mono`, `borderColor: colors.inputBorder` (primary at ~25% opacity).
-- **Progress bars** — `height: 3`, `backgroundColor: colors.progressBg` track, primary fill.
+
+- **Buttons** — primary uses `cornerRadius: 10`, vertical padding 14pt, coral shadow (primary at 30% opacity). Use solid primary color.
+- **Cards** — `cornerRadius: 12`, `borderWidth: 1`, `cardBorder` color.
+- **Chips/tags** — `cornerRadius: 8`, `chipBg` + `chipBorder`, never use pill shape for preference chips.
+- **Inputs** — `cornerRadius: 10`, IBM Plex Mono font, `inputBorder` color (primary at ~25% opacity).
+- **Progress bars** — `height: 3`, `progressBg` track color, primary fill.
 - **Restaurant card** — has both swipe gestures AND visible Pass/Like buttons at the bottom of the info section.
-- **Results list** — compact flat list with 40×40 square rank badges (medal emoji 🥇🥈🥉) and a slim 2px agreement bar. No full image cards.
-- **Profile section titles** — `fontSize: 11, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase"`, muted `rgba(255,255,255,0.5)`.
-- **CodeDisplay boxes** — 50×50, `borderColor: rgba(217,119,87,0.4)`, IBM Plex Mono 18px primary text.
-- **Home header** — compact with `borderBottomColor: rgba(255,255,255,0.06)` divider.
-- **"How it works" tips** — left-border accent block: `borderLeftWidth: 3, borderLeftColor: rgba(217,119,87,0.4)`, warm-tinted bg.
+- **Results list** — compact flat list with 40×40 square rank badges (medal emoji 🥇🥈🥉) and a slim 2px agreement bar. No full image cards. Has a List/Map segmented toggle that shows a `MapKit` map with `MapMarker` annotations at each restaurant's `lat`/`lng`. Tapping a row opens a `confirmationDialog` with **Open in Apple Maps** (`MKMapItem.openInMaps`) and **Open in Google Maps** (tries `comgooglemaps://` deep-link, falls back to `google.com/maps/search/?api=1&query_place_id=…`). The `ResultsView` has a back button at the top that pops the nav path (or dismisses the fullScreenCover if the path is already empty).
+- **Profile section titles** — `fontSize: 11, fontWeight: .bold, letterSpacing: 0.6, textCase: .uppercase`, muted white at 50% opacity.
+- **CodeDisplay boxes** — 60×72, primary border at 40% opacity, monospaced 32px primary text. Tapping the boxes copies the code and shows a "Copied!" toast. The share icon (`square.and.arrow.up`) sits inline to the right of the boxes.
+- **Home header** — compact with bottom divider at 6% white opacity.
+- **"How it works" tips** — left-border accent block: 3pt left border at 40% primary opacity, warm-tinted background.
+- **Session setup sheet (`CreateSessionSheet`)** — full-screen `MKMapView` (`UIViewRepresentable`) with tap-to-drop-pin as the primary location input. Tap anywhere → coral pin drops + reverse geocode fires. Search bar at the top uses `MKLocalSearch` (`naturalLanguageQuery`) to fly the map to a typed city/neighborhood. "My Location" button (GPS) also centers + pins. Sheet is `.large` detent. Works for both group and solo sessions via the `soloMode: Bool` parameter; button label and title adapt accordingly. The `LocationManager` class lives in this file (GPS helper only — no geocoding).
+- **Session setup prefill + filters** — `onAppear` pre-fills `sessionCuisines`, `sessionRadius`, and `sessionBudgets` from `authStore.user?.preferences`. The sheet's selections always override personal prefs for *that session* (sent as `cuisine_overrides` / `radius_km_override` / `budget_override`). The radius is a continuous **`Slider`** from ~1 mi to ~50 mi (`1.6…80` km, step `0.8`) — the old preset chip row was replaced because day-to-day cravings vary. The **swipe-limit slider** (3–30, step 1) sets `swipe_ceiling_override`. Budget is a multi-select chip row underneath.
+- **Results map pin tap** — `ResultsView.mapView` uses `MapAnnotation` (not `MapMarker`) so each pin is a tappable `Button` that opens the same Apple/Google Maps `confirmationDialog` the list rows use. The annotation shows a coral mappin + the restaurant name caption.
+
+## Simulator noise (safe to ignore)
+
+Running in the iOS simulator produces several recurring log lines that are **not app bugs**:
+
+| Log pattern | Cause | Action |
+|---|---|---|
+| `Failed to send CA Event for app launch measurements` | Simulator telemetry stub | Ignore |
+| `Unable to simultaneously satisfy constraints` (accessoryView.bottom / inputView.top) | UIKit internal keyboard layout conflict — iOS bug in simulator, not app code | Ignore |
+| `CHHapticPattern patternForKey: hapticpatternlibrary.plist couldn't be opened` | Haptic asset files absent from simulator environment | Ignore |
+| `System gesture gate timed out` | Simulator gesture recognizer noise | Ignore |
+| `Could not find cached accumulator for token` | UIKit keyboard candidate cache noise | Ignore |
+| `-[RTIInputSystemClient remoteTextInputSessionWithID:performInputOperation:] requires a valid sessionID` | UIKit keyboard input session noise | Ignore |
+
+**Real errors to act on:** `NSURLErrorDomain Code=-1004 "Could not connect to the server."` — means the backend is not running on port 8001. Start it with `uvicorn main:app --reload --port 8001`.
 
 ## Pointers
 

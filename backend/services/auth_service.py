@@ -2,13 +2,14 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 from uuid import UUID
 
+import httpx
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from config import Settings, get_settings
 from models.user import User
-from schemas.auth import TokenResponse, UserCreate, UserLogin
+from schemas.auth import AppleAuthRequest, AppleTokenClaims, TokenResponse, UserCreate, UserLogin
 
 TokenType = Literal["access", "refresh"]
 
@@ -105,12 +106,54 @@ class AuthService:
 
     async def login(self, data: UserLogin) -> tuple[User, TokenResponse]:
         user = await User.find_one(User.email == data.email.lower())
-        if user is None or not self.verify_password(data.password, user.password_hash):
+        if user is None or user.password_hash is None or not self.verify_password(data.password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password",
             )
         return user, self._issue_token_pair(user.id)
+
+    async def apple_login(self, data: AppleAuthRequest) -> tuple[User, TokenResponse]:
+        claims = await self._verify_apple_token(data.identity_token)
+
+        user = await User.find_one(User.apple_id == claims.sub)
+        if user is None and claims.email:
+            user = await User.find_one(User.email == claims.email.lower())
+
+        if user is None:
+            name = data.full_name or (claims.email.split("@")[0] if claims.email else "DishMatch User")
+            email = claims.email or f"{claims.sub}@privaterelay.appleid.com"
+            user = User(email=email.lower(), password_hash=None, name=name, apple_id=claims.sub)
+            await user.insert()
+        elif user.apple_id is None:
+            user.apple_id = claims.sub
+            await user.save()
+
+        return user, self._issue_token_pair(user.id)
+
+    async def _verify_apple_token(self, identity_token: str) -> AppleTokenClaims:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("https://appleid.apple.com/auth/keys")
+            resp.raise_for_status()
+            keys = resp.json()["keys"]
+
+        header = jwt.get_unverified_header(identity_token)
+        key = next((k for k in keys if k["kid"] == header.get("kid")), None)
+        if key is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Apple signing key not found")
+
+        try:
+            payload = jwt.decode(
+                identity_token,
+                key,
+                algorithms=["RS256"],
+                audience=self.settings.apple_bundle_id,
+                issuer="https://appleid.apple.com",
+            )
+        except JWTError as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Apple identity token") from exc
+
+        return AppleTokenClaims(sub=payload["sub"], email=payload.get("email"))
 
     async def refresh(self, refresh_token: str) -> TokenResponse:
         user_id = self.decode_token(refresh_token, expected_type="refresh")

@@ -40,13 +40,14 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok", "service": "dishmatch-api"}
 
-    from routers import auth, restaurants, sessions, swipes, users
+    from routers import auth, recommendations, restaurants, sessions, swipes, users
 
     app.include_router(auth.router)
     app.include_router(users.router)
     app.include_router(sessions.router)
     app.include_router(restaurants.router)
     app.include_router(swipes.router)
+    app.include_router(recommendations.router)
 
     return app
 

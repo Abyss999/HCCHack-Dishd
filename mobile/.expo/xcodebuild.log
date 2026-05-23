@@ -1,0 +1,7 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace /Users/nosaj/Documents/Coding/Projects/Hackathons/HCCHack/mobile/ios/DishMatch.xcworkspace -configuration Debug -scheme DishMatch -destination id=BA501764-0781-448D-865F-BBFFEBBE2463 COCOAPODS_PARALLEL_CODE_SIGN=true COMPILER_INDEX_STORE_ENABLE=NO
+
+Build settings from command line:
+    COCOAPODS_PARALLEL_CODE_SIGN = true
+    COMPILER_INDEX_STORE_ENABLE = NO
+

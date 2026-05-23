@@ -1,0 +1,100 @@
+import Foundation
+
+final class APIClient: Sendable {
+    static let shared = APIClient()
+
+    private let session = URLSession.shared
+
+    private static var decoder: JSONDecoder {
+        let d = JSONDecoder()
+        d.keyDecodingStrategy = .convertFromSnakeCase
+        // Backend returns ISO8601 with fractional seconds (e.g. "2026-05-22T23:45:03.365040")
+        // Swift's built-in .iso8601 strategy rejects fractional seconds, so we use a custom one.
+        let withFraction = ISO8601DateFormatter()
+        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let withoutFraction = ISO8601DateFormatter()
+        withoutFraction.formatOptions = [.withInternetDateTime]
+        d.dateDecodingStrategy = .custom { decoder in
+            let str = try decoder.singleValueContainer().decode(String.self)
+            if let date = withFraction.date(from: str) { return date }
+            if let date = withoutFraction.date(from: str) { return date }
+            throw DecodingError.dataCorruptedError(
+                in: try decoder.singleValueContainer(),
+                debugDescription: "Cannot parse date: \(str)"
+            )
+        }
+        return d
+    }
+
+    private static var encoder: JSONEncoder {
+        let e = JSONEncoder()
+        e.keyEncodingStrategy = .convertToSnakeCase
+        return e
+    }
+
+    func get<T: Decodable>(_ path: String, token: String? = nil) async throws -> T {
+        try await request(method: "GET", path: path, body: nil as _Empty?, token: token)
+    }
+
+    func post<Body: Encodable, T: Decodable>(_ path: String, body: Body, token: String? = nil) async throws -> T {
+        try await request(method: "POST", path: path, body: body, token: token)
+    }
+
+    func postNoContent<Body: Encodable>(_ path: String, body: Body, token: String? = nil) async throws {
+        let _: _EmptyResponse = try await request(method: "POST", path: path, body: body, token: token)
+    }
+
+    func put<Body: Encodable, T: Decodable>(_ path: String, body: Body, token: String? = nil) async throws -> T {
+        try await request(method: "PUT", path: path, body: body, token: token)
+    }
+
+    func delete(_ path: String, token: String? = nil) async throws {
+        let _: _EmptyResponse = try await request(method: "DELETE", path: path, body: nil as _Empty?, token: token)
+    }
+
+    private func request<Body: Encodable, T: Decodable>(
+        method: String,
+        path: String,
+        body: Body?,
+        token: String?
+    ) async throws -> T {
+        let url: URL
+        if path.hasPrefix("http") {
+            url = URL(string: path)!
+        } else {
+            // Use string concatenation so query strings ("?foo=bar") aren't percent-encoded.
+            let base = Config.apiBaseURL.absoluteString
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            let suffix = path.hasPrefix("/") ? path : "/" + path
+            url = URL(string: base + suffix)!
+        }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = method
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        if let body { req.httpBody = try APIClient.encoder.encode(body) }
+
+        let (data, response) = try await session.data(for: req)
+        guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+
+        switch http.statusCode {
+        case 200...299:
+            // 204 No Content (or any empty body) — return an "empty" decoded value when T allows it.
+            if data.isEmpty, let empty = _EmptyResponse() as? T { return empty }
+            return try APIClient.decoder.decode(T.self, from: data)
+        case 401:
+            throw APIError.unauthorized
+        case 404:
+            throw APIError.notFound
+        default:
+            let msg = (try? JSONDecoder().decode(_ErrorBody.self, from: data))?.detail
+                      ?? "HTTP \(http.statusCode)"
+            throw APIError.serverError(msg)
+        }
+    }
+}
+
+private struct _Empty: Encodable, Decodable {}
+private struct _EmptyResponse: Decodable {}
+private struct _ErrorBody: Decodable { let detail: String }

@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     # Third-party
     google_places_api_key: str | None = None
+    use_mock_restaurants: bool = False
     expo_push_url: str = "https://exp.host/--/api/v2/push/send"
 
     # HTTP / CORS
@@ -54,6 +55,9 @@ class Settings(BaseSettings):
 
     # Domain limits
     max_session_members: int = 12
+
+    # Apple Sign In
+    apple_bundle_id: str = "com.dishmatch.app"
 
     @property
     def cors_allow_credentials(self) -> bool:

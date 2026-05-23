@@ -24,6 +24,16 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class AppleAuthRequest(BaseModel):
+    identity_token: str
+    full_name: str | None = None
+
+
+class AppleTokenClaims(BaseModel):
+    sub: str
+    email: str | None = None
+
+
 class UserPublic(BaseModel):
     id: UUID
     email: EmailStr

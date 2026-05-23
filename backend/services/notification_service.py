@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any
 from uuid import UUID
@@ -45,7 +46,9 @@ class NotificationService:
         target_ids = [m.user_id for m in session.members if m.user_id not in exclude]
         if not target_ids:
             return
-        users = [u for u in [await User.get(uid) for uid in target_ids] if u is not None]
+        # Parallel fetch — serial awaits used to add ~N×Mongo-latency to every broadcast.
+        fetched = await asyncio.gather(*(User.get(uid) for uid in target_ids))
+        users = [u for u in fetched if u is not None]
         tokens = [t.token for u in users for t in u.push_tokens]
         if tokens:
             await self._send(tokens, title, body, data)

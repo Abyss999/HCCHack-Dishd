@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -12,7 +12,7 @@ SessionStatus = Literal["lobby", "swiping", "results", "matched"]
 class SessionMember(BaseModel):
     user_id: UUID
     name: str
-    joined_at: datetime = Field(default_factory=datetime.utcnow)
+    joined_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class Session(Document):
@@ -25,7 +25,12 @@ class Session(Document):
     location_label: str | None = None
     members: list[SessionMember] = Field(default_factory=list)
     matched_restaurant_id: UUID | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    solo_mode: bool = False
+    cuisine_overrides: list[str] | None = None
+    radius_km_override: float | None = None
+    budget_overrides: list[str] | None = None  # multi-select; e.g. ["$$", "$$$"] → only those tiers
+    swipe_ceiling_override: int | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "sessions"
