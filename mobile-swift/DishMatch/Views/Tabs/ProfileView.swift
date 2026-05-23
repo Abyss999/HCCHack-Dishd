@@ -9,8 +9,14 @@ struct ProfileView: View {
     @StateObject private var vm = ProfileViewModel()
     @State private var showSaveConfirm = false
 
-    private let dietaryOptions  = ["Vegetarian", "Vegan", "Gluten-free", "Dairy-free", "Nut-free"]
-    private let cuisineOptions  = ["Italian", "Asian", "Mexican", "Indian", "Mediterranean", "American"]
+    private let dietaryOptions  = ["Vegetarian", "Vegan", "Gluten-free", "Dairy-free", "Nut-free", "Halal", "Kosher", "Pescatarian"]
+    private let cuisineOptions  = [
+        "Italian", "Mexican", "American", "Chinese", "Japanese", "Thai",
+        "Korean", "Vietnamese", "Indian", "Mediterranean", "Greek",
+        "French", "Spanish", "Middle Eastern", "BBQ", "Burgers",
+        "Pizza", "Sushi", "Seafood", "Steakhouse", "Brunch", "Bakery",
+        "Cafe", "Dessert", "Vegan", "Vegetarian"
+    ]
     private let budgetOptions   = ["$", "$$", "$$$", "$$$$"]
     private let distanceMinKm: Double = 1.6
     private let distanceMaxKm: Double = 80.0

@@ -25,8 +25,10 @@ struct RestaurantCardView: View {
             likeOverlay
             passOverlay
         }
-        .frame(maxWidth: .infinity)
-        .clipped()                              // hard-clip so AsyncImage / long names can't push past the card edge
+        // No inner .frame(maxWidth: .infinity) — SwipeStackView pins us to an explicit
+        // (capped) width. Letting both sides claim "infinity" was the source of the card
+        // expanding past the screen mid-swipe.
+        .clipped()
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
         .rotationEffect(.degrees(rotationDegrees))
@@ -86,7 +88,6 @@ struct RestaurantCardView: View {
                     }
                 }
             }
-            .frame(maxWidth: .infinity)
             .frame(height: 280)
             .clipped()
 

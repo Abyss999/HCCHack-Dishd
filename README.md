@@ -85,6 +85,7 @@ WS    /ws/sessions/{id}?token=...
 
 - `GET /restaurants?session_id=…` returns up to ~20 results around the session's pinned `(lat, lng)`, filtered by the effective `GroupFilter` (intersected member prefs *or* session overrides).
 - The query result is memoized in `place_search_caches` keyed by a SHA-256 of `(round(lat, 3), round(lng, 3), radius_m, sorted(cuisines), max_price_level)`. TTL is **6 hours** via a Mongo `expireAfterSeconds=0` index on `expires_at`. Subsequent calls inside the cache window skip Google Places entirely and rehydrate from the `restaurants` collection.
+- **Budget filter is multi-select.** `Session.budget_overrides` is a list of tiers (e.g. `["$$", "$$$"]`). The Places API call uses `max_price_level = max(levels)` so the network response is narrow; results are then post-filtered to the exact selected tiers. Restaurants without a `price_tier` are kept (Google often omits it).
 - Each restaurant document is upserted by `google_place_id`. On first sight we also fire a one-shot **Places Details** call with `fields=editorial_summary` to populate `description` (capped at ~180 chars). Surfaced on swipe cards and result rows.
 
 ## Session lifecycle
