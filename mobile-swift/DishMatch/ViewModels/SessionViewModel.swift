@@ -49,9 +49,9 @@ final class SessionViewModel: ObservableObject {
         restaurants = try await api.get("/restaurants?session_id=\(sessionId)", token: token)
     }
 
-    func submitSwipe(sessionId: UUID, restaurantId: UUID, direction: SwipeDirection) async throws {
+    func submitSwipe(sessionId: UUID, restaurantId: UUID, direction: SwipeDirection) async throws -> SwipeAck {
         let body = SwipeRequest(restaurantId: restaurantId, direction: direction)
-        let _: SwipeAck = try await api.post("/sessions/\(sessionId)/swipe", body: body, token: token)
+        return try await api.post("/sessions/\(sessionId)/swipe", body: body, token: token)
     }
 
     func fetchResults(sessionId: UUID) async throws {

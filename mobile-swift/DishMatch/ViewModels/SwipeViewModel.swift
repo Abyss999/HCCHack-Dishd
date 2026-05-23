@@ -3,7 +3,7 @@ import UIKit
 
 @MainActor
 final class SwipeViewModel: ObservableObject {
-    @Published var swipeCount = 0
+    @Published private(set) var swipedIds: Set<UUID> = []
     @Published var memberProgress: [UUID: Int] = [:]
     @Published var matchedRestaurant: Restaurant?
     @Published var showMatch = false
@@ -17,8 +17,17 @@ final class SwipeViewModel: ObservableObject {
         self.sessionId = sessionId
     }
 
-    var restaurants: [Restaurant] { sessionVM?.restaurants ?? [] }
-    var canSeeResults: Bool { swipeCount >= 5 }
+    var swipeCount: Int { swipedIds.count }
+    var canSeeResults: Bool { swipedIds.count >= 5 }
+
+    var visibleRestaurants: [Restaurant] {
+        let all = sessionVM?.restaurants ?? []
+        return all.filter { !swipedIds.contains($0.id) }
+    }
+
+    func markSwiped(_ restaurant: Restaurant) {
+        swipedIds.insert(restaurant.id)
+    }
 
     func bind(sessionVM: SessionViewModel) {
         guard self.sessionVM == nil else { return }
@@ -36,12 +45,16 @@ final class SwipeViewModel: ObservableObject {
 
     func swipe(restaurant: Restaurant, direction: SwipeDirection) async {
         do {
-            try await sessionVM?.submitSwipe(
+            let ack = try await sessionVM?.submitSwipe(
                 sessionId: sessionId,
                 restaurantId: restaurant.id,
                 direction: direction
             )
-            swipeCount += 1
+            if let r = ack?.instantMatch {
+                matchedRestaurant = r
+                showMatch = true
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            }
         } catch {
             print("[SwipeViewModel] submitSwipe failed: \(error)")
         }

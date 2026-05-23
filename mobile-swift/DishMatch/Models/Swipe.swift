@@ -11,4 +11,5 @@ struct SwipeRequest: Encodable {
 
 struct SwipeAck: Decodable {
     let accepted: Bool
+    let instantMatch: Restaurant?
 }

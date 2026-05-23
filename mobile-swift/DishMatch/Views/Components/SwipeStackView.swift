@@ -3,22 +3,19 @@ import SwiftUI
 struct SwipeStackView: View {
     let restaurants: [Restaurant]
     let onSwipe: (Restaurant, SwipeDirection) async -> Void
-    let onStackEmpty: () -> Void
+    let onAdvance: (Restaurant) -> Void
 
     @EnvironmentObject var themeStore: ThemeStore
     @Environment(\.colorScheme) var systemScheme
     var theme: AppTheme { AppTheme.current(for: themeStore.resolved(system: systemScheme)) }
 
-    @State private var swipedCount = 0
-
     var body: some View {
-        let remaining = Array(restaurants.dropFirst(swipedCount))
-        if remaining.isEmpty {
+        if restaurants.isEmpty {
             emptyState
         } else {
             ZStack {
                 // Background peek card
-                if remaining.count > 1 {
+                if restaurants.count > 1 {
                     RoundedRectangle(cornerRadius: 16)
                         .fill(theme.surface)
                         .overlay(
@@ -31,26 +28,26 @@ struct SwipeStackView: View {
                         .zIndex(0)
                 }
 
-                // Top card
+                // Top card — .id() forces a fresh view (and fresh @State offset)
+                // whenever the top restaurant changes, so the incoming card
+                // starts at offset = .zero instead of inheriting the fly-out position.
                 RestaurantCardView(
-                    restaurant: remaining[0],
+                    restaurant: restaurants[0],
                     onSwipeLeft: {
-                        Task { await onSwipe(remaining[0], .no) }
-                        advance()
+                        let top = restaurants[0]
+                        onAdvance(top)
+                        Task { await onSwipe(top, .no) }
                     },
                     onSwipeRight: {
-                        Task { await onSwipe(remaining[0], .yes) }
-                        advance()
+                        let top = restaurants[0]
+                        onAdvance(top)
+                        Task { await onSwipe(top, .yes) }
                     }
                 )
+                .id(restaurants[0].id)
                 .zIndex(1)
             }
         }
-    }
-
-    private func advance() {
-        swipedCount += 1
-        if swipedCount >= restaurants.count { onStackEmpty() }
     }
 
     private var emptyState: some View {

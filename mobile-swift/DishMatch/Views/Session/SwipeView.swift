@@ -46,11 +46,13 @@ struct SwipeView: View {
                     Spacer()
                 } else {
                     SwipeStackView(
-                        restaurants: vm.restaurants,
+                        restaurants: vm.visibleRestaurants,
                         onSwipe: { restaurant, direction in
                             await vm.swipe(restaurant: restaurant, direction: direction)
                         },
-                        onStackEmpty: {}
+                        onAdvance: { restaurant in
+                            vm.markSwiped(restaurant)
+                        }
                     )
                     .padding(.horizontal, 20)
                     .padding(.top, 20)

@@ -85,6 +85,7 @@ struct SessionNavigator: View {
                     case .swipe(let id):
                         SwipeView(sessionId: id, path: $path)
                             .environmentObject(sessionVM)
+                            .id(id)
                     case .results(let id):
                         ResultsView(sessionId: id)
                             .environmentObject(sessionVM)
