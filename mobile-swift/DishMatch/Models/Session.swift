@@ -14,6 +14,11 @@ struct Session: Codable, Identifiable, Equatable {
     let locationLabel: String?
     var members: [SessionMember]
     let matchedRestaurantId: UUID?
+    var soloMode: Bool?
+    let cuisineOverrides: [String]?
+    let radiusKmOverride: Double?
+    let budgetOverrides: [String]?
+    let swipeCeilingOverride: Int?
     let createdAt: Date
 }
 

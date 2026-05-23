@@ -160,10 +160,11 @@ async def _maybe_nudge_laggards(
     current_user_id: UUID,
 ) -> None:
     """When everyone except one member has hit the ceiling, ping that member."""
+    ceiling = matching.ceiling_for(session)
     pending: list[UUID] = []
     for member in session.members:
         count = await matching.count_user_swipes(session.id, member.user_id)
-        if count < matching.SWIPE_CEILING:
+        if count < ceiling:
             pending.append(member.user_id)
             if len(pending) > 1:
                 return  # more than one straggler — no nudge yet

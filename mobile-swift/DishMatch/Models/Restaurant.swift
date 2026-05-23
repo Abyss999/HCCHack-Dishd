@@ -11,6 +11,7 @@ struct Restaurant: Codable, Identifiable {
     let address: String?
     let lat: Double
     let lng: Double
+    let description: String?
 }
 
 struct SessionResult: Codable, Identifiable {

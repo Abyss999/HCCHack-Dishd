@@ -8,6 +8,9 @@ final class SwipeViewModel: ObservableObject {
     @Published var matchedRestaurant: Restaurant?
     @Published var showMatch = false
     @Published var navigateToResults = false
+    @Published var isLoadingRestaurants = true
+    private var didNavigateToResults = false
+    private var didShowMatch = false
 
     let sessionId: UUID
     private(set) var sessionVM: SessionViewModel?
@@ -36,10 +39,32 @@ final class SwipeViewModel: ObservableObject {
     }
 
     func load() async {
+        isLoadingRestaurants = true
+        defer { isLoadingRestaurants = false }
         do {
-            try await sessionVM?.fetchRestaurants(sessionId: sessionId)
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                group.addTask { [sessionId, sessionVM] in
+                    try await sessionVM?.fetchRestaurants(sessionId: sessionId)
+                }
+                group.addTask {
+                    try await Task.sleep(nanoseconds: 20 * 1_000_000_000)
+                    throw CancellationError()
+                }
+                _ = try await group.next()
+                group.cancelAll()
+            }
         } catch {
-            print("[SwipeViewModel] fetchRestaurants failed: \(error)")
+            print("[SwipeViewModel] fetchRestaurants failed or timed out: \(error). Falling back to mocks.")
+            // Detach so this survives a parent .task cancellation (e.g. SwipeView re-mount).
+            let sid = sessionId
+            let svm = sessionVM
+            Task.detached {
+                do {
+                    try await svm?.fetchRestaurants(sessionId: sid, mock: true)
+                } catch {
+                    print("[SwipeViewModel] mock fallback also failed: \(error)")
+                }
+            }
         }
     }
 
@@ -51,9 +76,7 @@ final class SwipeViewModel: ObservableObject {
                 direction: direction
             )
             if let r = ack?.instantMatch {
-                matchedRestaurant = r
-                showMatch = true
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                triggerMatch(r)
             }
         } catch {
             print("[SwipeViewModel] submitSwipe failed: \(error)")
@@ -68,17 +91,29 @@ final class SwipeViewModel: ObservableObject {
             self?.memberProgress[p.userId] = p.swipeCount
         }
         ws.onInstantMatch = { [weak self] p in
-            self?.matchedRestaurant = p.restaurant
-            self?.showMatch = true
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            self?.triggerMatch(p.restaurant)
         }
         ws.onPhaseChange = { [weak self] p in
             if p.phase == .results || p.phase == .matched {
-                self?.navigateToResults = true
+                self?.requestNavigateToResults()
             }
         }
         ws.onTop3Ready = { [weak self] _ in
-            self?.navigateToResults = true
+            self?.requestNavigateToResults()
         }
+    }
+
+    func triggerMatch(_ restaurant: Restaurant) {
+        guard !didShowMatch else { return }
+        didShowMatch = true
+        matchedRestaurant = restaurant
+        showMatch = true
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+
+    func requestNavigateToResults() {
+        guard !didNavigateToResults else { return }
+        didNavigateToResults = true
+        navigateToResults = true
     }
 }

@@ -25,6 +25,11 @@ class Session(Document):
     location_label: str | None = None
     members: list[SessionMember] = Field(default_factory=list)
     matched_restaurant_id: UUID | None = None
+    solo_mode: bool = False
+    cuisine_overrides: list[str] | None = None
+    radius_km_override: float | None = None
+    budget_overrides: list[str] | None = None  # multi-select; e.g. ["$$", "$$$"] → only those tiers
+    swipe_ceiling_override: int | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:

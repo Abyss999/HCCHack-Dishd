@@ -7,6 +7,7 @@ final class HomeViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var createdSession: Session?
     @Published var joinedSession: Session?
+    @Published var pastSessions: [Session] = []
 
     private let sessionVM: SessionViewModel
 
@@ -14,12 +15,34 @@ final class HomeViewModel: ObservableObject {
         self.sessionVM = sessionVM
     }
 
-    func createSession() async {
+    func fetchPastSessions() async {
+        do {
+            pastSessions = try await sessionVM.fetchUserSessions()
+        } catch {
+            // non-critical — silently fail, history stays empty
+        }
+    }
+
+    func createSession(
+        lat: Double = 0, lng: Double = 0,
+        label: String? = nil,
+        soloMode: Bool = false,
+        cuisineOverrides: [String]? = nil,
+        radiusKmOverride: Double? = nil,
+        budgetOverrides: [String]? = nil,
+        swipeCeilingOverride: Int? = nil
+    ) async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            createdSession = try await sessionVM.createSession(lat: 0, lng: 0)
+            createdSession = try await sessionVM.createSession(
+                lat: lat, lng: lng, soloMode: soloMode, locationLabel: label,
+                cuisineOverrides: cuisineOverrides,
+                radiusKmOverride: radiusKmOverride,
+                budgetOverrides: budgetOverrides,
+                swipeCeilingOverride: swipeCeilingOverride
+            )
         } catch {
             errorMessage = error.localizedDescription
         }

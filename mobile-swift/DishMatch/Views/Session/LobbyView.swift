@@ -3,6 +3,7 @@ import SwiftUI
 struct LobbyView: View {
     let sessionId: UUID
     @Binding var path: NavigationPath
+    let onLeave: (() -> Void)?
 
     @EnvironmentObject var sessionVM: SessionViewModel
     @EnvironmentObject var authStore: AuthStore
@@ -12,6 +13,7 @@ struct LobbyView: View {
 
     @StateObject private var ws = WebSocketService()
     @State private var members: [SessionMember] = []
+    @State private var showLeaveAlert = false
 
     private var session: Session? { sessionVM.session }
     private var isHost: Bool { session?.hostUserId == authStore.user?.id }
@@ -22,18 +24,39 @@ struct LobbyView: View {
             theme.bg.ignoresSafeArea()
             ScrollView {
                 VStack(spacing: 28) {
+                    // Header row with leave button
+                    HStack {
+                        Button { showLeaveAlert = true } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(theme.textSecondary)
+                                .frame(width: 32, height: 32)
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 16)
+
                     // Title
                     VStack(spacing: 6) {
                         Text("Session Lobby")
                             .font(.system(size: 26, weight: .black))
                             .foregroundColor(theme.text)
-                        Text("Share the code with friends")
+                        Text("Tap the code to copy · tap ↑ to share")
                             .font(.system(size: 14))
                             .foregroundColor(theme.textSecondary)
+                        if let label = session?.locationLabel, !label.isEmpty {
+                            HStack(spacing: 4) {
+                                Text("📍")
+                                    .font(.system(size: 13))
+                                Text(label)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(theme.textSecondary)
+                            }
+                        }
                     }
-                    .padding(.top, 24)
+                    .padding(.top, 8)
 
-                    // Session code
+                    // Session code + share
                     if let code = session?.code {
                         CodeDisplayView(code: code)
                     }
@@ -98,6 +121,12 @@ struct LobbyView: View {
             }
         }
         .navigationBarHidden(true)
+        .alert("Leave Session?", isPresented: $showLeaveAlert) {
+            Button("Leave", role: .destructive) { onLeave?() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You'll exit this session and return to home.")
+        }
         .task {
             members = sessionVM.session?.members ?? []
             do {

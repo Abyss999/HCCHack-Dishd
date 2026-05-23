@@ -1,10 +1,5 @@
 import Foundation
 
-struct AuthTokens: Codable {
-    let accessToken: String
-    let refreshToken: String
-}
-
 @MainActor
 final class AuthStore: ObservableObject {
     static let shared = AuthStore()
@@ -62,6 +57,12 @@ final class AuthStore: ObservableObject {
     func logout() {
         clearTokens()
         isAuthenticated = false
+    }
+
+    /// Replace the cached `user` after a server-side mutation (e.g. PUT /users/me/preferences)
+    /// so other views like CreateSessionSheet see fresh prefs without re-fetching /users/me.
+    func updateUser(_ user: User) {
+        self.user = user
     }
 
     @discardableResult

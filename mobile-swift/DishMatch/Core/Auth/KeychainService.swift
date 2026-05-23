@@ -3,14 +3,16 @@ import Security
 
 enum KeychainService {
     private static let service = "com.dishmatch.app"
+    private static let sharedAccessGroup = "group.com.dishmatch.app"
 
-    static func set(_ value: String, forKey key: String) throws {
+    static func set(_ value: String, forKey key: String, shared: Bool = false) throws {
         let data = Data(value.utf8)
-        let query: [CFString: Any] = [
+        var query: [CFString: Any] = [
             kSecClass:       kSecClassGenericPassword,
             kSecAttrService: service,
             kSecAttrAccount: key
         ]
+        if shared { query[kSecAttrAccessGroup] = sharedAccessGroup }
         SecItemDelete(query as CFDictionary)
         var attrs = query
         attrs[kSecValueData] = data
@@ -18,14 +20,15 @@ enum KeychainService {
         guard status == errSecSuccess else { throw KeychainError.unhandledError(status) }
     }
 
-    static func get(_ key: String) throws -> String? {
-        let query: [CFString: Any] = [
+    static func get(_ key: String, shared: Bool = false) throws -> String? {
+        var query: [CFString: Any] = [
             kSecClass:        kSecClassGenericPassword,
             kSecAttrService:  service,
             kSecAttrAccount:  key,
             kSecReturnData:   true,
             kSecMatchLimit:   kSecMatchLimitOne
         ]
+        if shared { query[kSecAttrAccessGroup] = sharedAccessGroup }
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         if status == errSecItemNotFound { return nil }
@@ -36,12 +39,13 @@ enum KeychainService {
         return string
     }
 
-    static func delete(_ key: String) {
-        let query: [CFString: Any] = [
+    static func delete(_ key: String, shared: Bool = false) {
+        var query: [CFString: Any] = [
             kSecClass:       kSecClassGenericPassword,
             kSecAttrService: service,
             kSecAttrAccount: key
         ]
+        if shared { query[kSecAttrAccessGroup] = sharedAccessGroup }
         SecItemDelete(query as CFDictionary)
     }
 

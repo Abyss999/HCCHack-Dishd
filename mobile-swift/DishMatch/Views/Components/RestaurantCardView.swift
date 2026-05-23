@@ -25,6 +25,8 @@ struct RestaurantCardView: View {
             likeOverlay
             passOverlay
         }
+        .frame(maxWidth: .infinity)
+        .clipped()                              // hard-clip so AsyncImage / long names can't push past the card edge
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
         .rotationEffect(.degrees(rotationDegrees))
@@ -48,7 +50,7 @@ struct RestaurantCardView: View {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                             offset = CGSize(width: -600, height: value.translation.height)
                         }
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onSwipeLeft() }
                     } else {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
@@ -63,7 +65,8 @@ struct RestaurantCardView: View {
 
     @ViewBuilder private var cardContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Photo
+            // Photo — fixed height (not maxHeight) so AsyncImage's intrinsic size
+            // never inflates the row past the card frame.
             ZStack(alignment: .bottomLeading) {
                 if let urlStr = restaurant.photoUrl, let url = URL(string: urlStr) {
                     AsyncImage(url: url) { phase in
@@ -83,6 +86,7 @@ struct RestaurantCardView: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity)
             .frame(height: 280)
             .clipped()
 
@@ -92,11 +96,14 @@ struct RestaurantCardView: View {
                     Text(restaurant.name)
                         .font(.system(size: 22, weight: .bold))
                         .foregroundColor(theme.text)
-                    Spacer()
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer(minLength: 8)
                     if let tier = restaurant.priceTier {
                         Text(tier)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(theme.primary)
+                            .fixedSize()
                     }
                 }
 
@@ -105,6 +112,15 @@ struct RestaurantCardView: View {
                         .font(.system(size: 13))
                         .foregroundColor(theme.textSecondary)
                         .lineLimit(1)
+                }
+
+                if let desc = restaurant.description, !desc.isEmpty {
+                    Text(desc)
+                        .font(.system(size: 12))
+                        .foregroundColor(theme.textSecondary)
+                        .lineLimit(2)
+                        .truncationMode(.tail)
+                        .padding(.top, 2)
                 }
 
                 HStack(spacing: 6) {
@@ -135,7 +151,7 @@ struct RestaurantCardView: View {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                             offset = CGSize(width: -600, height: 0)
                         }
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onSwipeLeft() }
                     } label: {
                         Label("Pass", systemImage: "xmark")

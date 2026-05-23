@@ -30,8 +30,21 @@ def _to_out(session: Session) -> SessionOut:
         location_label=session.location_label,
         members=[MemberOut(**m.model_dump()) for m in session.members],
         matched_restaurant_id=session.matched_restaurant_id,
+        solo_mode=session.solo_mode,
+        cuisine_overrides=session.cuisine_overrides,
+        radius_km_override=session.radius_km_override,
+        budget_overrides=session.budget_overrides,
         created_at=session.created_at,
     )
+
+
+@router.get("/users/me/sessions", response_model=list[SessionOut])
+async def get_my_sessions(
+    current: User = Depends(get_current_user),
+    sessions: SessionService = Depends(get_session_service),
+) -> list[SessionOut]:
+    user_sessions = await sessions.get_user_sessions(current.id)
+    return [_to_out(s) for s in user_sessions]
 
 
 @router.post("/sessions", response_model=SessionOut, status_code=status.HTTP_201_CREATED)
@@ -83,7 +96,10 @@ async def join_session(
 
 
 @router.post("/sessions/{session_id}/start", response_model=SessionOut)
+@limiter.limit(_settings.rate_limit_session_create)
 async def start_session(
+    request: Request,
+    response: Response,
     session_id: UUID,
     current: User = Depends(get_current_user),
     sessions: SessionService = Depends(get_session_service),
@@ -95,6 +111,38 @@ async def start_session(
         {"type": "phase_change", "payload": {"phase": session.status}},
     )
     return _to_out(session)
+
+
+@router.post("/sessions/{session_id}/leave", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit(_settings.rate_limit_session_join)
+async def leave_session(
+    request: Request,
+    response: Response,
+    session_id: UUID,
+    current: User = Depends(get_current_user),
+    sessions: SessionService = Depends(get_session_service),
+    cm: ConnectionManager = Depends(get_connection_manager),
+) -> Response:
+    deleted = await sessions.leave(session_id, current.id)
+    if not deleted:
+        await cm.broadcast(
+            session_id,
+            {"type": "member_joined", "payload": {"user_id": str(current.id), "name": "", "left": True}},
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit(_settings.rate_limit_session_create)
+async def delete_session(
+    request: Request,
+    response: Response,
+    session_id: UUID,
+    current: User = Depends(get_current_user),
+    sessions: SessionService = Depends(get_session_service),
+) -> Response:
+    await sessions.delete(session_id, current.id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/sessions/{session_id}/status", response_model=SessionOut)

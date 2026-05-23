@@ -55,4 +55,10 @@ class Database:
             models.append(Swipe)
         except ImportError:
             pass
+        try:
+            from models.place_search_cache import PlaceSearchCache  # noqa: WPS433
+
+            models.append(PlaceSearchCache)
+        except ImportError:
+            pass
         return models

@@ -1,7 +1,6 @@
 import Foundation
 
-@MainActor
-final class APIClient {
+final class APIClient: Sendable {
     static let shared = APIClient()
 
     private let session = URLSession.shared
@@ -41,8 +40,16 @@ final class APIClient {
         try await request(method: "POST", path: path, body: body, token: token)
     }
 
+    func postNoContent<Body: Encodable>(_ path: String, body: Body, token: String? = nil) async throws {
+        let _: _EmptyResponse = try await request(method: "POST", path: path, body: body, token: token)
+    }
+
     func put<Body: Encodable, T: Decodable>(_ path: String, body: Body, token: String? = nil) async throws -> T {
         try await request(method: "PUT", path: path, body: body, token: token)
+    }
+
+    func delete(_ path: String, token: String? = nil) async throws {
+        let _: _EmptyResponse = try await request(method: "DELETE", path: path, body: nil as _Empty?, token: token)
     }
 
     private func request<Body: Encodable, T: Decodable>(
@@ -73,6 +80,8 @@ final class APIClient {
 
         switch http.statusCode {
         case 200...299:
+            // 204 No Content (or any empty body) — return an "empty" decoded value when T allows it.
+            if data.isEmpty, let empty = _EmptyResponse() as? T { return empty }
             return try APIClient.decoder.decode(T.self, from: data)
         case 401:
             throw APIError.unauthorized
@@ -86,5 +95,6 @@ final class APIClient {
     }
 }
 
-private struct _Empty: Encodable {}
+private struct _Empty: Encodable, Decodable {}
+private struct _EmptyResponse: Decodable {}
 private struct _ErrorBody: Decodable { let detail: String }

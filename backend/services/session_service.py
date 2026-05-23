@@ -26,11 +26,18 @@ class SessionService:
             session = Session(
                 code=code,
                 host_user_id=host.id,
-                status="lobby",
+                # Always start in "swiping" — host doesn't have to wait. Others can still
+                # join while the session is in swiping state (see join()).
+                status="swiping",
                 location_lat=data.location_lat,
                 location_lng=data.location_lng,
                 location_label=data.location_label,
                 members=[host_member],
+                solo_mode=data.solo_mode,
+                cuisine_overrides=data.cuisine_overrides,
+                radius_km_override=data.radius_km_override,
+                budget_overrides=data.budget_overrides,
+                swipe_ceiling_override=data.swipe_ceiling_override,
             )
             try:
                 await session.insert()
@@ -103,8 +110,48 @@ class SessionService:
         await session.save()
         return session
 
+    async def get_user_sessions(self, user_id: UUID) -> list[Session]:
+        # UUID fields are stored as BSON Binary (subtype 4) by Beanie, so the query
+        # value must be a UUID object — not str(user_id) — or nothing will match.
+        return (
+            await Session.find({"members.user_id": user_id})
+            .sort(-Session.created_at)
+            .limit(20)
+            .to_list()
+        )
+
     def is_member(self, session: Session, user_id: UUID) -> bool:
         return any(m.user_id == user_id for m in session.members)
+
+    async def leave(self, session_id: UUID, user_id: UUID) -> bool:
+        """Remove user from session. Returns True if the session was deleted (last member left)."""
+        # Import here to avoid a circular import (Swipe -> Session via tests etc.)
+        from models.swipe import Swipe
+
+        session = await self.get_by_id(session_id)
+        if not self.is_member(session, user_id):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a session member")
+
+        session.members = [m for m in session.members if m.user_id != user_id]
+        if not session.members:
+            await Swipe.find(Swipe.session_id == session_id).delete()
+            await session.delete()
+            return True
+
+        if session.host_user_id == user_id:
+            # Promote the earliest-joined remaining member to host.
+            session.host_user_id = session.members[0].user_id
+        await session.save()
+        return False
+
+    async def delete(self, session_id: UUID, user_id: UUID) -> None:
+        from models.swipe import Swipe
+
+        session = await self.get_by_id(session_id)
+        if session.host_user_id != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the host can delete this session")
+        await Swipe.find(Swipe.session_id == session_id).delete()
+        await session.delete()
 
     @staticmethod
     def _generate_code() -> str:

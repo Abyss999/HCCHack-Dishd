@@ -16,6 +16,7 @@ class Restaurant(Document):
     address: str | None = None
     lat: float
     lng: float
+    description: str | None = None  # editorial_summary from Places Details (cached, single API call)
 
     class Settings:
         name = "restaurants"

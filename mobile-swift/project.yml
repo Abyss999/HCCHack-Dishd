@@ -46,6 +46,58 @@ targets:
     scheme:
       testTargets: []
 
+  # DishMatchMessages: requires paid Apple Developer account (App Groups + Sign in with Apple).
+  # All extension source lives in DishMatchMessages/. To enable:
+  #   1. Get a paid Apple Developer membership
+  #   2. Register group.com.dishmatch.app as an App Group in the portal
+  #   3. Enable Sign in with Apple for com.dishmatch.app
+  #   4. Uncomment the block below and run `xcodegen generate`
+  #
+  # DishMatchMessages:
+  #   type: app-extension
+  #   platform: iOS
+  #   deploymentTarget: "16.0"
+  #   configFiles:
+  #     Debug: DishMatch/Config/Debug.xcconfig
+  #     Release: DishMatch/Config/Release.xcconfig
+  #   sources:
+  #     - path: DishMatchMessages
+  #       excludes:
+  #         - Resources/Info.plist
+  #     - path: DishMatch/Models/Restaurant.swift
+  #     - path: DishMatch/Models/Session.swift
+  #     - path: DishMatch/Models/Swipe.swift
+  #     - path: DishMatch/Models/User.swift
+  #     - path: DishMatch/Models/WSEvent.swift
+  #     - path: DishMatch/Core/Network/APIClient.swift
+  #     - path: DishMatch/Core/Network/NetworkError.swift
+  #     - path: DishMatch/Core/Auth/KeychainService.swift
+  #     - path: DishMatch/Core/Auth/AuthTokens.swift
+  #     - path: DishMatch/Core/Auth/AppleSignInHelper.swift
+  #     - path: DishMatch/Core/Theme/AppTheme.swift
+  #     - path: DishMatch/Core/Theme/ThemeStore.swift
+  #     - path: DishMatch/Config/Config.swift
+  #     - path: DishMatch/Views/Components/RestaurantCardView.swift
+  #     - path: DishMatch/Views/Components/SwipeStackView.swift
+  #   resources:
+  #     - path: DishMatchMessages/Resources
+  #   settings:
+  #     base:
+  #       PRODUCT_BUNDLE_IDENTIFIER: com.dishmatch.app.messages
+  #       INFOPLIST_FILE: DishMatchMessages/Resources/Info.plist
+  #       APPLICATION_EXTENSION_API_ONLY: YES
+  #       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  #   entitlements:
+  #     path: DishMatchMessages/DishMatchMessages.entitlements
+  #     properties:
+  #       com.apple.developer.applesignin:
+  #         - Default
+  #       com.apple.security.application-groups:
+  #         - group.com.dishmatch.app
+  #   dependencies:
+  #     - package: Nuke
+  #       product: Nuke
+
 packages:
   Nuke:
     url: https://github.com/kean/Nuke

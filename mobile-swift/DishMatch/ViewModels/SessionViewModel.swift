@@ -18,9 +18,24 @@ final class SessionViewModel: ObservableObject {
 
     var token: String? { auth.accessToken }
 
-    func createSession(lat: Double, lng: Double) async throws -> Session {
+    func createSession(
+        lat: Double, lng: Double,
+        soloMode: Bool = false,
+        locationLabel: String? = nil,
+        cuisineOverrides: [String]? = nil,
+        radiusKmOverride: Double? = nil,
+        budgetOverrides: [String]? = nil,
+        swipeCeilingOverride: Int? = nil
+    ) async throws -> Session {
         isLoading = true; defer { isLoading = false }
-        let body = CreateSessionBody(locationLat: lat, locationLng: lng)
+        let body = CreateSessionBody(
+            locationLat: lat, locationLng: lng, soloMode: soloMode,
+            locationLabel: locationLabel,
+            cuisineOverrides: cuisineOverrides,
+            radiusKmOverride: radiusKmOverride,
+            budgetOverrides: budgetOverrides,
+            swipeCeilingOverride: swipeCeilingOverride
+        )
         let s: Session = try await api.post("/sessions", body: body, token: token)
         session = s
         return s
@@ -44,9 +59,11 @@ final class SessionViewModel: ObservableObject {
         session = try await api.post("/sessions/\(id)/start", body: _Empty(), token: token)
     }
 
-    func fetchRestaurants(sessionId: UUID) async throws {
+    func fetchRestaurants(sessionId: UUID, mock: Bool = false) async throws {
         isLoading = true; defer { isLoading = false }
-        restaurants = try await api.get("/restaurants?session_id=\(sessionId)", token: token)
+        restaurants = []  // clear stale data so a failed fetch can't fall back to a prior session's list
+        let path = "/restaurants?session_id=\(sessionId)" + (mock ? "&mock=true" : "")
+        restaurants = try await api.get(path, token: token)
     }
 
     func submitSwipe(sessionId: UUID, restaurantId: UUID, direction: SwipeDirection) async throws -> SwipeAck {
@@ -59,15 +76,33 @@ final class SessionViewModel: ObservableObject {
         let out: ResultsOut = try await api.get("/sessions/\(sessionId)/results", token: token)
         results = out.top
     }
+
+    func fetchUserSessions() async throws -> [Session] {
+        try await api.get("/users/me/sessions", token: token)
+    }
+
+    func leaveSession(_ id: UUID) async throws {
+        try await api.postNoContent("/sessions/\(id)/leave", body: _Empty(), token: token)
+    }
+
+    func deleteSession(_ id: UUID) async throws {
+        try await api.delete("/sessions/\(id)", token: token)
+    }
 }
 
 private struct CreateSessionBody: Encodable {
     let locationLat: Double
     let locationLng: Double
+    let soloMode: Bool
+    let locationLabel: String?
+    let cuisineOverrides: [String]?
+    let radiusKmOverride: Double?
+    let budgetOverrides: [String]?
+    let swipeCeilingOverride: Int?
 }
 
 private struct ResultsOut: Decodable {
     let top: [SessionResult]
 }
 
-private struct _Empty: Encodable {}
+private struct _Empty: Codable {}
