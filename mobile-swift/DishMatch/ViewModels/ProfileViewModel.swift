@@ -19,7 +19,7 @@ final class ProfileViewModel: ObservableObject {
         if let prefs = auth.user?.preferences {
             dietaryRestrictions = prefs.dietaryRestrictions
             cuisinePreferences  = prefs.cuisinePreferences
-            budgetRange         = prefs.budgetRange
+            budgetRange         = prefs.budgetRange ?? "$$"
             maxDistanceKm       = prefs.maxDistanceKm
         }
     }
