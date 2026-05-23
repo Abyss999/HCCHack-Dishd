@@ -43,7 +43,7 @@ class MatchingService:
             return None
         return await Restaurant.get(docs[0]["_id"])
 
-    async def get_top_3(self, session: Session) -> list[dict]:
+    async def get_top_n(self, session: Session) -> list[dict]:
         total = len(session.members)
         if total == 0:
             return []
@@ -52,7 +52,7 @@ class MatchingService:
             {"$group": {"_id": "$restaurant_id", "yes_users": {"$addToSet": "$user_id"}}},
             {"$project": {"yes_count": {"$size": "$yes_users"}}},
             {"$sort": {"yes_count": -1}},
-            {"$limit": 3},
+            {"$limit": session.top_n},
         ]
         rows = await Swipe.aggregate(pipeline).to_list()
         results: list[dict] = []

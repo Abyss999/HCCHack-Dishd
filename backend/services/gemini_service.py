@@ -82,7 +82,7 @@ If there are no reviews, return an empty array for overall_vibe_quotes."""
         prefs = user.preferences
         cuisines = ", ".join(prefs.cuisine_preferences) if prefs.cuisine_preferences else "any"
         dietary = ", ".join(prefs.dietary_restrictions) if prefs.dietary_restrictions else "none"
-        budget = prefs.budget_range or "any"
+        budget = "/".join(prefs.budget_ranges) if prefs.budget_ranges else "any"
 
         restaurant_lines = []
         for r in yes_restaurants:
@@ -137,9 +137,9 @@ Choose the one that best matches their preferences. Respond with JSON only (no m
 
         # Rule-based checks
         budget_match = True
-        if prefs.budget_range and restaurant.price_tier:
+        if prefs.budget_ranges and restaurant.price_tier:
             from services.places_service import PRICE_LEVEL_BY_TIER
-            user_level = PRICE_LEVEL_BY_TIER.get(prefs.budget_range, 4)
+            user_level = max((PRICE_LEVEL_BY_TIER.get(b, 0) for b in prefs.budget_ranges), default=4)
             rest_level = PRICE_LEVEL_BY_TIER.get(restaurant.price_tier, 0)
             budget_match = rest_level <= user_level
 
@@ -200,7 +200,7 @@ User fit:
 - Budget match: {"Yes" if budget_match else "No"}
 - Shared cuisine interests: {overlap_str}
 - User's dietary restrictions: {", ".join(prefs.dietary_restrictions) if prefs.dietary_restrictions else "none"}
-- User's budget: {prefs.budget_range or "any"}
+- User's budget: {"/".join(prefs.budget_ranges) if prefs.budget_ranges else "any"}
 
 Respond with the narrative text only (no quotes, no JSON, no markdown)."""
         try:

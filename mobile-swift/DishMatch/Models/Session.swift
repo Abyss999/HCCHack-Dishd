@@ -19,6 +19,7 @@ struct Session: Codable, Identifiable, Equatable {
     let radiusKmOverride: Double?
     let budgetOverrides: [String]?
     let swipeCeilingOverride: Int?
+    let topN: Int?
     let createdAt: Date
 }
 

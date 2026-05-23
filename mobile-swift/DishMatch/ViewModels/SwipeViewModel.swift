@@ -75,8 +75,22 @@ final class SwipeViewModel: ObservableObject {
                 restaurantId: restaurant.id,
                 direction: direction
             )
-            if let r = ack?.instantMatch {
-                triggerMatch(r)
+            if let r = ack?.instantMatch { triggerMatch(r) }
+        } catch APIError.unauthorized {
+            // Access token expired mid-session — refresh once and retry.
+            guard await AuthStore.shared.refreshIfNeeded() else {
+                print("[SwipeViewModel] submitSwipe failed: token expired, refresh failed")
+                return
+            }
+            do {
+                let ack = try await sessionVM?.submitSwipe(
+                    sessionId: sessionId,
+                    restaurantId: restaurant.id,
+                    direction: direction
+                )
+                if let r = ack?.instantMatch { triggerMatch(r) }
+            } catch {
+                print("[SwipeViewModel] submitSwipe failed after token refresh: \(error)")
             }
         } catch {
             print("[SwipeViewModel] submitSwipe failed: \(error)")

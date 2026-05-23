@@ -16,8 +16,7 @@ struct HistoryView: View {
 
     enum HistoryFilter: String, CaseIterable, Identifiable {
         case all = "All"
-        case lobby = "Lobby"
-        case swiping = "Swiping"
+        case swiping = "Matching"
         case results = "Results"
         case matched = "Matched"
         case solo = "Solo"
@@ -49,7 +48,6 @@ struct HistoryView: View {
             let statusOK: Bool = {
                 switch filter {
                 case .all: return true
-                case .lobby: return s.status == .lobby
                 case .swiping: return s.status == .swiping
                 case .results: return s.status == .results
                 case .matched: return s.status == .matched

@@ -56,7 +56,11 @@ class PlacesService:
         for p in prefs:
             dietary.update(d.lower() for d in p.dietary_restrictions)
 
-        price_levels = [PRICE_LEVEL_BY_TIER[p.budget_range] for p in prefs if p.budget_range]
+        price_levels = []
+        for p in prefs:
+            if p.budget_ranges:
+                level = max(PRICE_LEVEL_BY_TIER[b] for b in p.budget_ranges if b in PRICE_LEVEL_BY_TIER)
+                price_levels.append(level)
         max_price_level = min(price_levels) if price_levels else None
 
         return GroupFilter(

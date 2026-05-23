@@ -30,7 +30,8 @@ final class HomeViewModel: ObservableObject {
         cuisineOverrides: [String]? = nil,
         radiusKmOverride: Double? = nil,
         budgetOverrides: [String]? = nil,
-        swipeCeilingOverride: Int? = nil
+        swipeCeilingOverride: Int? = nil,
+        topN: Int = 3
     ) async {
         isLoading = true
         errorMessage = nil
@@ -41,7 +42,8 @@ final class HomeViewModel: ObservableObject {
                 cuisineOverrides: cuisineOverrides,
                 radiusKmOverride: radiusKmOverride,
                 budgetOverrides: budgetOverrides,
-                swipeCeilingOverride: swipeCeilingOverride
+                swipeCeilingOverride: swipeCeilingOverride,
+                topN: topN
             )
         } catch {
             errorMessage = error.localizedDescription

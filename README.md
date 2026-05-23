@@ -105,6 +105,18 @@ WS    /ws/sessions/{id}?token=...
 - Session codes enforced by regex; sessions capped at `MAX_SESSION_MEMBERS` (12).
 - WebSocket validates JWT + session membership on connect; frames capped at 1024 bytes.
 
+## Design tokens
+
+The app is dark-first. Key hex values (all in `AppTheme.swift`):
+
+| Token | Dark | Light |
+|---|---|---|
+| Background | `#0a0a0a` | `#faf9f7` |
+| Surface | `#1a1a1a` | `#f2efeb` |
+| Primary (coral) | `#d97757` | `#d97757` |
+| Like (green) | `#4caf50` | `#4caf50` |
+| Pass (red) | `#ef5350` | `#ef5350` |
+
 Full details — including UI design tokens, simulator-noise tables, and per-component patterns — in [CLAUDE.md](./CLAUDE.md).
 
 ## Deployment

@@ -1,7 +1,9 @@
 import SwiftUI
+import UIKit
 
 struct SwipeStackView: View {
     let restaurants: [Restaurant]
+    let isLoading: Bool
     let onSwipe: (Restaurant, SwipeDirection) async -> Void
     let onAdvance: (Restaurant) -> Void
 
@@ -9,54 +11,71 @@ struct SwipeStackView: View {
     @Environment(\.colorScheme) var systemScheme
     var theme: AppTheme { AppTheme.current(for: themeStore.resolved(system: systemScheme)) }
 
-    var body: some View {
-        if restaurants.isEmpty {
-            emptyState
-        } else {
-            // GeometryReader gives us an exact width to pin the card to, so AsyncImage's
-            // intrinsic size + spring animations can't ever make it visually wider than
-            // the SwipeView container.
-            GeometryReader { geo in
-                // Hard cap so a transient layout pass can't ever inflate the card past the
-                // device width minus the parent's padding. 380pt comfortably fits the
-                // narrowest iPhone (iPhone SE @ 320pt minus padding) and clamps tablets.
-                let w = min(geo.size.width, 380)
-                ZStack {
-                    if restaurants.count > 1 {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(theme.surface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(theme.cardBorder, lineWidth: 1)
-                            )
-                            .frame(width: w, height: 520)
-                            .scaleEffect(0.96)
-                            .offset(y: 10)
-                            .zIndex(0)
-                    }
+    // Derived once from stable screen bounds — no GeometryReader, no mid-animation fluctuation.
+    // The -40 accounts for SwipeView's .padding(.horizontal, 20).
+    private var cardW: CGFloat { min(UIScreen.main.bounds.width - 40, 360) }
+    private var cardH: CGFloat { min(UIScreen.main.bounds.height * 0.65, 490) }
 
-                    // Top card — .id() forces a fresh @State on the new restaurant.
-                    RestaurantCardView(
-                        restaurant: restaurants[0],
-                        onSwipeLeft: {
-                            let top = restaurants[0]
-                            onAdvance(top)
-                            Task { await onSwipe(top, .no) }
-                        },
-                        onSwipeRight: {
-                            let top = restaurants[0]
-                            onAdvance(top)
-                            Task { await onSwipe(top, .yes) }
-                        }
-                    )
-                    .frame(width: w, height: 520)
-                    .id(restaurants[0].id)
-                    .zIndex(1)
-                }
-                .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+    var body: some View {
+        Group {
+            if isLoading {
+                skeletonStack
+            } else if restaurants.isEmpty {
+                emptyState
+            } else {
+                cardStack
             }
-            .frame(height: 540)   // explicit so the GeometryReader has a deterministic size
         }
+        .frame(height: cardH + 20)
+    }
+
+    private var cardStack: some View {
+        ZStack(alignment: .top) {
+            if restaurants.count > 1 {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(theme.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(theme.cardBorder, lineWidth: 1)
+                    )
+                    .frame(width: cardW, height: cardH)
+                    .scaleEffect(0.96)
+                    .offset(y: 10)
+                    .zIndex(0)
+            }
+            RestaurantCardView(
+                restaurant: restaurants[0],
+                onSwipeLeft: {
+                    let top = restaurants[0]
+                    onAdvance(top)
+                    Task { await onSwipe(top, .no) }
+                },
+                onSwipeRight: {
+                    let top = restaurants[0]
+                    onAdvance(top)
+                    Task { await onSwipe(top, .yes) }
+                }
+            )
+            .frame(width: cardW, height: cardH)
+            .id(restaurants[0].id)
+            .zIndex(1)
+        }
+        .frame(height: cardH + 20, alignment: .top)
+    }
+
+    private var skeletonStack: some View {
+        ZStack(alignment: .top) {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(theme.surface)
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.cardBorder, lineWidth: 1))
+                .frame(width: cardW, height: cardH)
+                .scaleEffect(0.96)
+                .offset(y: 10)
+                .zIndex(0)
+            SkeletonCardView(width: cardW, height: cardH, theme: theme)
+                .zIndex(1)
+        }
+        .frame(height: cardH + 20, alignment: .top)
     }
 
     private var emptyState: some View {

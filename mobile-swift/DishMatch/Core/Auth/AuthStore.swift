@@ -65,6 +65,18 @@ final class AuthStore: ObservableObject {
         self.user = user
     }
 
+    /// Reads the stored refresh token from Keychain and refreshes the access token.
+    /// Safe to call from anywhere (e.g. on a 401 mid-session swipe).
+    @discardableResult
+    func refreshIfNeeded() async -> Bool {
+        guard
+            let stored = try? KeychainService.get("auth_tokens"),
+            let data = stored.data(using: .utf8),
+            let tokens = try? JSONDecoder().decode(AuthTokens.self, from: data)
+        else { return false }
+        return await refreshAccessToken(using: tokens.refreshToken)
+    }
+
     @discardableResult
     func refreshAccessToken(using refreshToken: String) async -> Bool {
         guard let tokens: AuthTokens = try? await api.post(

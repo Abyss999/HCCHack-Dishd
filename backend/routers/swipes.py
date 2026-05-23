@@ -113,7 +113,7 @@ async def get_results(
     session = await sessions.get_by_id(session_id)
     if not sessions.is_member(session, current.id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a session member")
-    top = await matching.get_top_3(session)
+    top = await matching.get_top_n(session)
     return ResultsOut(top=[
         TopResult(
             restaurant=_restaurant_out(row["restaurant"]),
@@ -131,7 +131,7 @@ async def _finalize_top3(
     cm: ConnectionManager,
     notifications: NotificationService,
 ) -> None:
-    top = await matching.get_top_3(session)
+    top = await matching.get_top_n(session)
     session.status = "results"
     await session.save()
     payload = [
@@ -149,7 +149,7 @@ async def _finalize_top3(
     )
     await notifications.send_to_session(
         session,
-        title="Your Top 3 is ready",
+        title=f"Your Top {session.top_n} is ready",
         body="Open DishMatch to see what your group picked.",
         data={"session_id": str(session.id), "type": "top3_ready"},
     )

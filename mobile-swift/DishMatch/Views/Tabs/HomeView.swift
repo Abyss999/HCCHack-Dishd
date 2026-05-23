@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var activeSession: Session?
     @State private var showCreateSheet = false
     @State private var soloSheetMode = false
+    @State private var startInLobby = false
 
     init() {
         let svm = SessionViewModel()
@@ -136,15 +137,26 @@ struct HomeView: View {
             if s == nil { Task { await homeVM.fetchPastSessions() } }
         }
         .onChange(of: homeVM.createdSession) { s in
-            if let s { activeSession = s }
+            if let s {
+                startInLobby = s.soloMode != true  // lobby only for group sessions
+                activeSession = s
+            }
         }
         .onChange(of: homeVM.joinedSession) { s in
-            if let s { activeSession = s }
+            if let s {
+                startInLobby = false  // joining → skip lobby
+                activeSession = s
+            }
         }
         .fullScreenCover(item: $activeSession) { session in
-            SessionNavigator(sessionId: session.id, sessionVM: sessionVM, isSolo: session.soloMode == true)
-                .environmentObject(authStore)
-                .environmentObject(themeStore)
+            SessionNavigator(
+                sessionId: session.id,
+                sessionVM: sessionVM,
+                isSolo: session.soloMode == true,
+                startInLobby: startInLobby
+            )
+            .environmentObject(authStore)
+            .environmentObject(themeStore)
         }
         .sheet(isPresented: $showCreateSheet) {
             CreateSessionSheet(homeVM: homeVM, soloMode: soloSheetMode)

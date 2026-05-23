@@ -4,7 +4,7 @@ import Foundation
 final class ProfileViewModel: ObservableObject {
     @Published var dietaryRestrictions: [String] = []
     @Published var cuisinePreferences: [String] = []
-    @Published var budgetRanges: [String] = []   // multi-select; saved as max budget
+    @Published var budgetRanges: [String] = []
     @Published var maxDistanceKm = 10.0
     @Published var isSaving = false
     @Published var saveError: String?
@@ -13,21 +13,15 @@ final class ProfileViewModel: ObservableObject {
     private let api: APIClient
     private let auth: AuthStore
 
-    private static let budgetOrder = ["$": 1, "$$": 2, "$$$": 3, "$$$$": 4]
-
     init(api: APIClient = .shared, auth: AuthStore = .shared) {
         self.api = api
         self.auth = auth
         if let prefs = auth.user?.preferences {
             dietaryRestrictions = prefs.dietaryRestrictions
             cuisinePreferences  = prefs.cuisinePreferences
-            budgetRanges        = prefs.budgetRange.map { [$0] } ?? []
+            budgetRanges        = prefs.budgetRanges
             maxDistanceKm       = prefs.maxDistanceKm
         }
-    }
-
-    var maxBudget: String? {
-        budgetRanges.max(by: { (Self.budgetOrder[$0] ?? 0) < (Self.budgetOrder[$1] ?? 0) })
     }
 
     func savePreferences() async {
@@ -37,7 +31,7 @@ final class ProfileViewModel: ObservableObject {
         let prefs = UserPreferences(
             dietaryRestrictions: dietaryRestrictions,
             cuisinePreferences:  cuisinePreferences,
-            budgetRange:         maxBudget,
+            budgetRanges:        budgetRanges,
             maxDistanceKm:       maxDistanceKm
         )
         do {

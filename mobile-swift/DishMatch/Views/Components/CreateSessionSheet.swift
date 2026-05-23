@@ -159,6 +159,7 @@ struct CreateSessionSheet: View {
     @State private var sessionRadius: Double = 16.0  // 10 mi default
     @State private var sessionBudgets: [String] = []
     @State private var sessionSwipeCeiling: Double = 10  // matches backend SWIPE_CEILING default
+    @State private var sessionTopN: Int = 3
 
     private let cuisineOptions = [
         "Italian", "Mexican", "American", "Chinese", "Japanese", "Thai",
@@ -323,7 +324,8 @@ struct CreateSessionSheet: View {
                                     cuisineOverrides: sessionCuisines.isEmpty ? nil : sessionCuisines,
                                     radiusKmOverride: sessionRadius,
                                     budgetOverrides: sessionBudgets.isEmpty ? nil : sessionBudgets,
-                                    swipeCeilingOverride: Int(sessionSwipeCeiling)
+                                    swipeCeilingOverride: Int(sessionSwipeCeiling),
+                                    topN: sessionTopN
                                 )
                                 dismiss()
                             }
@@ -345,7 +347,7 @@ struct CreateSessionSheet: View {
                     // Clamp into the slider's range so the thumb is always visible.
                     sessionRadius = min(max(prefs.maxDistanceKm, radiusMinKm), radiusMaxKm)
                 }
-                if let b = prefs.budgetRange { sessionBudgets = [b] }
+                if !prefs.budgetRanges.isEmpty { sessionBudgets = prefs.budgetRanges }
             }
         }
     }
@@ -387,6 +389,28 @@ struct CreateSessionSheet: View {
                     }
                     Slider(value: $sessionSwipeCeiling, in: 3...30, step: 1)
                         .tint(theme.primary)
+                }
+            }
+
+            settingsDivider
+
+            // Top N results
+            settingRow(label: "Show top results") {
+                HStack(spacing: 8) {
+                    ForEach([3, 4, 5], id: \.self) { n in
+                        let sel = sessionTopN == n
+                        Button { sessionTopN = n } label: {
+                            Text("Top \(n)")
+                                .font(.system(size: 13, weight: sel ? .semibold : .regular))
+                                .foregroundColor(sel ? .white : theme.primary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(sel ? theme.primary : theme.chipBg)
+                                .cornerRadius(8)
+                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(theme.chipBorder, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
 

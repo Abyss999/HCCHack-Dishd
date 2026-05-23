@@ -6,12 +6,16 @@ struct SwipeView: View {
     let onLeave: (() -> Void)?
 
     @EnvironmentObject var sessionVM: SessionViewModel
+    @EnvironmentObject var authStore: AuthStore
     @EnvironmentObject var themeStore: ThemeStore
     @Environment(\.colorScheme) var systemScheme
     var theme: AppTheme { AppTheme.current(for: themeStore.resolved(system: systemScheme)) }
 
     @StateObject private var vm: SwipeViewModel
     @State private var showLeaveAlert = false
+    @State private var showEndAlert = false
+
+    private var isHost: Bool { sessionVM.session?.hostUserId == authStore.user?.id }
 
     init(sessionId: UUID, path: Binding<NavigationPath>, onLeave: (() -> Void)? = nil) {
         self.sessionId = sessionId
@@ -53,9 +57,16 @@ struct SwipeView: View {
                         }
                     }
                     Spacer()
-                    Text("\(vm.swipeCount) swiped")
-                        .font(.system(size: 13))
-                        .foregroundColor(theme.textSecondary)
+                    HStack(spacing: 8) {
+                        Text("\(vm.swipeCount) swiped")
+                            .font(.system(size: 13))
+                            .foregroundColor(theme.textSecondary)
+                        if isHost {
+                            Button("End") { showEndAlert = true }
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(theme.pass)
+                        }
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
@@ -65,24 +76,19 @@ struct SwipeView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 12)
 
-                // Card stack
-                if vm.isLoadingRestaurants {
-                    Spacer()
-                    ProgressView().tint(theme.primary)
-                    Spacer()
-                } else {
-                    SwipeStackView(
-                        restaurants: vm.visibleRestaurants,
-                        onSwipe: { restaurant, direction in
-                            await vm.swipe(restaurant: restaurant, direction: direction)
-                        },
-                        onAdvance: { restaurant in
-                            vm.markSwiped(restaurant)
-                        }
-                    )
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                }
+                // Card stack — skeleton shown while loading, cards once ready
+                SwipeStackView(
+                    restaurants: vm.visibleRestaurants,
+                    isLoading: vm.isLoadingRestaurants,
+                    onSwipe: { restaurant, direction in
+                        await vm.swipe(restaurant: restaurant, direction: direction)
+                    },
+                    onAdvance: { restaurant in
+                        vm.markSwiped(restaurant)
+                    }
+                )
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
 
                 Spacer()
 
@@ -105,11 +111,23 @@ struct SwipeView: View {
             }
         }
         .navigationBarHidden(true)
+        .onChange(of: vm.visibleRestaurants.isEmpty) { isEmpty in
+            guard isEmpty, !vm.isLoadingRestaurants, vm.swipeCount > 0 else { return }
+            vm.requestNavigateToResults()
+        }
         .alert("Leave Session?", isPresented: $showLeaveAlert) {
             Button("Leave", role: .destructive) { onLeave?() }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Your swipes will be saved but you'll exit this session.")
+        }
+        .alert("End Session?", isPresented: $showEndAlert) {
+            Button("End for Everyone", role: .destructive) {
+                Task { try? await sessionVM.deleteSession(sessionId); onLeave?() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This ends the session and shows results for all members.")
         }
         .task {
             vm.bind(sessionVM: sessionVM)

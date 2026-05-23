@@ -15,10 +15,23 @@ class Database:
             uuidRepresentation="standard",
             tz_aware=True,
         )
+        db = cls.client[settings.mongo_db_name]
+        await cls._fix_indexes(db)
         await init_beanie(
-            database=cls.client[settings.mongo_db_name],
+            database=db,
             document_models=cls._document_models(),
         )
+
+    @classmethod
+    async def _fix_indexes(cls, db) -> None:
+        # Drop apple_id index if it exists without sparse=true so Beanie can recreate it correctly.
+        try:
+            info = await db["users"].index_information()
+            idx = info.get("apple_id_1", {})
+            if idx and not idx.get("sparse", False):
+                await db["users"].drop_index("apple_id_1")
+        except Exception:
+            pass
 
     @classmethod
     async def disconnect(cls) -> None:

@@ -73,9 +73,17 @@ struct ResultsView: View {
                     if vm.isLoading {
                         ProgressView().tint(theme.primary).padding(40)
                     } else if vm.results.isEmpty {
-                        Text("No results yet. Keep swiping!")
-                            .foregroundColor(theme.textSecondary)
-                            .padding(40)
+                        VStack(spacing: 14) {
+                            ProgressView().tint(theme.primary)
+                            Text("Calculating results…")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(theme.textSecondary)
+                            Text("Hang tight while everyone finishes swiping.")
+                                .font(.system(size: 13))
+                                .foregroundColor(theme.textTertiary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(40)
                     } else if showMap {
                         mapView
                     } else {

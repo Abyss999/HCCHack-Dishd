@@ -1,5 +1,65 @@
 import SwiftUI
 
+// MARK: - Skeleton card shown while restaurants are loading
+
+struct SkeletonCardView: View {
+    let width: CGFloat
+    let height: CGFloat
+    let theme: AppTheme
+    @State private var shimmerX: CGFloat = -1
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(theme.surface)
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.cardBorder, lineWidth: 1))
+
+            VStack(alignment: .leading, spacing: 0) {
+                theme.surfaceLight
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 280)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        RoundedRectangle(cornerRadius: 4).fill(theme.surfaceLight).frame(width: 180, height: 22)
+                        Spacer()
+                        RoundedRectangle(cornerRadius: 4).fill(theme.surfaceLight).frame(width: 40, height: 16)
+                    }
+                    RoundedRectangle(cornerRadius: 4).fill(theme.surfaceLight).frame(width: 140, height: 14)
+                    RoundedRectangle(cornerRadius: 4).fill(theme.surfaceLight).frame(maxWidth: .infinity).frame(height: 28)
+                    HStack(spacing: 6) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            RoundedRectangle(cornerRadius: 8).fill(theme.surfaceLight).frame(width: 60, height: 24)
+                        }
+                        Spacer()
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity)
+            }
+
+            LinearGradient(
+                gradient: Gradient(stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .white.opacity(0.07), location: 0.5),
+                    .init(color: .clear, location: 1)
+                ]),
+                startPoint: UnitPoint(x: shimmerX - 0.5, y: 0),
+                endPoint: UnitPoint(x: shimmerX + 0.5, y: 0)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .frame(width: width, height: height)
+        .clipped()
+        .cornerRadius(16)
+        .onAppear {
+            withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {
+                shimmerX = 1.5
+            }
+        }
+    }
+}
+
 struct RestaurantCardView: View {
     let restaurant: Restaurant
     let onSwipeLeft:  () -> Void
@@ -66,17 +126,17 @@ struct RestaurantCardView: View {
     // MARK: Card body
 
     @ViewBuilder private var cardContent: some View {
+        // Fill the full frame so every card is identical in size regardless of content.
         VStack(alignment: .leading, spacing: 0) {
-            // Photo — fixed height (not maxHeight) so AsyncImage's intrinsic size
-            // never inflates the row past the card frame.
-            ZStack(alignment: .bottomLeading) {
+            // Photo — exactly 280pt, no more.
+            ZStack {
                 if let urlStr = restaurant.photoUrl, let url = URL(string: urlStr) {
                     AsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img):
                             img.resizable()
                                 .scaledToFill()
-                                .frame(height: 280)
+                                .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 280)
                                 .clipped()
                         default:
                             theme.surface
@@ -91,10 +151,10 @@ struct RestaurantCardView: View {
                     }
                 }
             }
-            .frame(height: 280)
+            .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 280)
             .clipped()
 
-            // Info
+            // Info — stretches to fill whatever height remains in the card frame.
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text(restaurant.name)
@@ -118,13 +178,23 @@ struct RestaurantCardView: View {
                         .lineLimit(1)
                 }
 
-                if let desc = restaurant.description, !desc.isEmpty {
-                    Text(desc)
-                        .font(.system(size: 12))
-                        .foregroundColor(theme.textSecondary)
-                        .lineLimit(2)
-                        .truncationMode(.tail)
-                        .padding(.top, 2)
+                let displayDesc = restaurant.description ?? restaurant.vibeBlurb
+                let isAiDesc = restaurant.description == nil && restaurant.vibeBlurb != nil
+                if let desc = displayDesc, !desc.isEmpty {
+                    HStack(alignment: .top, spacing: 4) {
+                        Text(desc)
+                            .font(.system(size: 12))
+                            .foregroundColor(theme.textSecondary)
+                            .lineLimit(2)
+                            .truncationMode(.tail)
+                        if isAiDesc {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 9))
+                                .foregroundColor(theme.primary.opacity(0.7))
+                                .padding(.top, 1)
+                        }
+                    }
+                    .padding(.top, 2)
                 }
 
                 HStack(spacing: 6) {
@@ -148,6 +218,10 @@ struct RestaurantCardView: View {
                         }
                     }
                 }
+
+                // Pushes buttons to the bottom of the info section regardless of how
+                // much content is above — keeps card height visually identical across cards.
+                Spacer(minLength: 0)
 
                 // Action buttons
                 HStack(spacing: 12) {
@@ -189,8 +263,10 @@ struct RestaurantCardView: View {
                 }
             }
             .padding(16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(theme.cardBg)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: Overlays

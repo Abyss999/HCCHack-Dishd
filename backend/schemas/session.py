@@ -16,6 +16,7 @@ class SessionCreate(BaseModel):
     radius_km_override: float | None = Field(default=None, gt=0, le=100)
     budget_overrides: list[Literal["$", "$$", "$$$", "$$$$"]] | None = Field(default=None, max_length=4)
     swipe_ceiling_override: int | None = Field(default=None, ge=3, le=30)
+    top_n: int = Field(default=3, ge=1, le=5)
 
 
 class MemberOut(BaseModel):
@@ -39,4 +40,5 @@ class SessionOut(BaseModel):
     radius_km_override: float | None = None
     budget_overrides: list[Literal["$", "$$", "$$$", "$$$$"]] | None = None
     swipe_ceiling_override: int | None = None
+    top_n: int = 3
     created_at: datetime

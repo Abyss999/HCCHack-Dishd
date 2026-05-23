@@ -25,7 +25,8 @@ final class SessionViewModel: ObservableObject {
         cuisineOverrides: [String]? = nil,
         radiusKmOverride: Double? = nil,
         budgetOverrides: [String]? = nil,
-        swipeCeilingOverride: Int? = nil
+        swipeCeilingOverride: Int? = nil,
+        topN: Int = 3
     ) async throws -> Session {
         isLoading = true; defer { isLoading = false }
         let body = CreateSessionBody(
@@ -34,7 +35,8 @@ final class SessionViewModel: ObservableObject {
             cuisineOverrides: cuisineOverrides,
             radiusKmOverride: radiusKmOverride,
             budgetOverrides: budgetOverrides,
-            swipeCeilingOverride: swipeCeilingOverride
+            swipeCeilingOverride: swipeCeilingOverride,
+            topN: topN
         )
         let s: Session = try await api.post("/sessions", body: body, token: token)
         session = s
@@ -107,6 +109,7 @@ private struct CreateSessionBody: Encodable {
     let radiusKmOverride: Double?
     let budgetOverrides: [String]?
     let swipeCeilingOverride: Int?
+    let topN: Int
 }
 
 private struct ResultsOut: Decodable {

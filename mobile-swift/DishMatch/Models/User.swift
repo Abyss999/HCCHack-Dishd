@@ -10,6 +10,6 @@ struct User: Codable, Identifiable {
 struct UserPreferences: Codable {
     var dietaryRestrictions: [String]
     var cuisinePreferences: [String]
-    var budgetRange: String?
+    var budgetRanges: [String]
     var maxDistanceKm: Double
 }

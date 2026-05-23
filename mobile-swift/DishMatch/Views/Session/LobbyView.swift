@@ -14,17 +14,18 @@ struct LobbyView: View {
     @StateObject private var ws = WebSocketService()
     @State private var members: [SessionMember] = []
     @State private var showLeaveAlert = false
+    @State private var showEndAlert = false
+    @State private var isEndingSession = false
 
     private var session: Session? { sessionVM.session }
     private var isHost: Bool { session?.hostUserId == authStore.user?.id }
-    private var canStart: Bool { members.count >= 1 }
 
     var body: some View {
         ZStack {
             theme.bg.ignoresSafeArea()
             ScrollView {
                 VStack(spacing: 28) {
-                    // Header row with leave button
+                    // Header row
                     HStack {
                         Button { showLeaveAlert = true } label: {
                             Image(systemName: "xmark")
@@ -33,15 +34,20 @@ struct LobbyView: View {
                                 .frame(width: 32, height: 32)
                         }
                         Spacer()
+                        if isHost {
+                            Button("End") { showEndAlert = true }
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(theme.pass)
+                        }
                     }
                     .padding(.top, 16)
 
-                    // Title
+                    // Title section
                     VStack(spacing: 6) {
-                        Text("Session Lobby")
+                        Text("Invite Friends")
                             .font(.system(size: 26, weight: .black))
                             .foregroundColor(theme.text)
-                        Text("Tap the code to copy · tap ↑ to share")
+                        Text("Share this code — others can join any time")
                             .font(.system(size: 14))
                             .foregroundColor(theme.textSecondary)
                         if let label = session?.locationLabel, !label.isEmpty {
@@ -56,64 +62,59 @@ struct LobbyView: View {
                     }
                     .padding(.top, 8)
 
-                    // Session code + share
+                    // Session code
                     if let code = session?.code {
                         CodeDisplayView(code: code)
                     }
 
-                    // Members list
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Members (\(members.count))")
+                    // Start Swiping button
+                    PrimaryButton(
+                        title: "Start Swiping →",
+                        isLoading: isEndingSession,
+                        isDisabled: false
+                    ) {
+                        path.append(SessionRoute.swipe(sessionId))
+                    }
+
+                    // Members card
+                    if session?.soloMode == true {
+                        VStack(spacing: 8) {
+                            Text("Solo session — swipe at your own pace.")
+                                .font(.system(size: 14))
+                                .foregroundColor(theme.textSecondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity)
+                        .background(theme.surface)
+                        .cornerRadius(12)
+                    } else {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("In this session (\(members.count))")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(theme.text)
-                            Spacer()
-                            if !canStart && isHost {
-                                Text("Need 2+ to start")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(theme.textTertiary)
-                            }
-                        }
 
-                        ForEach(members) { member in
-                            HStack(spacing: 12) {
-                                AvatarView(name: member.name, userId: member.userId)
-                                Text(member.name)
-                                    .font(.system(size: 15))
-                                    .foregroundColor(theme.text)
-                                if member.userId == session?.hostUserId {
-                                    Text("Host")
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundColor(theme.primary)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 2)
-                                        .background(theme.chipBg)
-                                        .clipShape(Capsule())
+                            ForEach(members) { member in
+                                HStack(spacing: 12) {
+                                    AvatarView(name: member.name, userId: member.userId)
+                                    Text(member.name)
+                                        .font(.system(size: 15))
+                                        .foregroundColor(theme.text)
+                                    if member.userId == session?.hostUserId {
+                                        Text("Host")
+                                            .font(.system(size: 11, weight: .medium))
+                                            .foregroundColor(theme.primary)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 2)
+                                            .background(theme.chipBg)
+                                            .clipShape(Capsule())
+                                    }
                                 }
                             }
                         }
-                    }
-                    .padding(16)
-                    .background(theme.surface)
-                    .cornerRadius(12)
-
-                    // Start button (host only)
-                    if isHost {
-                        PrimaryButton(
-                            title: "Start Swiping",
-                            isLoading: sessionVM.isLoading,
-                            isDisabled: !canStart
-                        ) {
-                            Task {
-                                try? await sessionVM.startSwiping(sessionId)
-                                path.append(SessionRoute.swipe(sessionId))
-                            }
-                        }
-                    } else {
-                        Text("Waiting for the host to start...")
-                            .font(.system(size: 14))
-                            .foregroundColor(theme.textSecondary)
-                            .padding(.vertical, 16)
+                        .padding(16)
+                        .background(theme.surface)
+                        .cornerRadius(12)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -126,6 +127,18 @@ struct LobbyView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("You'll exit this session and return to home.")
+        }
+        .alert("End Session?", isPresented: $showEndAlert) {
+            Button("End Session", role: .destructive) {
+                Task {
+                    isEndingSession = true
+                    try? await sessionVM.deleteSession(sessionId)
+                    onLeave?()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This ends the session for everyone.")
         }
         .task {
             members = sessionVM.session?.members ?? []
@@ -144,8 +157,8 @@ struct LobbyView: View {
                 }
             }
             ws.onPhaseChange = { p in
-                if p.phase == .swiping {
-                    path.append(SessionRoute.swipe(sessionId))
+                if p.phase == .results || p.phase == .matched {
+                    path.append(SessionRoute.results(sessionId))
                 }
             }
         }

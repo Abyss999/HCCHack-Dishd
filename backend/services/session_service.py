@@ -38,6 +38,7 @@ class SessionService:
                 radius_km_override=data.radius_km_override,
                 budget_overrides=data.budget_overrides,
                 swipe_ceiling_override=data.swipe_ceiling_override,
+                top_n=data.top_n,
             )
             try:
                 await session.insert()

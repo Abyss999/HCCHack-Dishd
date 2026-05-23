@@ -30,6 +30,7 @@ class Session(Document):
     radius_km_override: float | None = None
     budget_overrides: list[str] | None = None  # multi-select; e.g. ["$$", "$$$"] → only those tiers
     swipe_ceiling_override: int | None = None
+    top_n: int = 3
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:

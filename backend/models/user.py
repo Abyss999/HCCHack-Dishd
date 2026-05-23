@@ -10,7 +10,7 @@ from pymongo import IndexModel
 class UserPreferences(BaseModel):
     dietary_restrictions: list[str] = Field(default_factory=list)
     cuisine_preferences: list[str] = Field(default_factory=list)
-    budget_range: Literal["$", "$$", "$$$", "$$$$"] | None = None
+    budget_ranges: list[str] = Field(default_factory=list)
     max_distance_km: float = 10.0
 
 
