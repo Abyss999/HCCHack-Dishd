@@ -17,3 +17,4 @@ class RestaurantOut(BaseModel):
     description: str | None = None
     menu: list[str] = Field(default_factory=list)
     vibe_blurb: str | None = None
+    is_seed: bool = False

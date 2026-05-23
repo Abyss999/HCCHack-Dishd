@@ -14,6 +14,30 @@ struct Restaurant: Codable, Identifiable {
     let description: String?
     let menu: [String]?
     let vibeBlurb: String?
+    let isSeed: Bool?
+}
+
+// MARK: - Personalized Fit (Houston-only)
+
+struct PersonalizedFitItem: Codable, Identifiable {
+    let name: String
+    let tags: [String]
+    let reviewQuote: String?
+    let reviewSource: String?
+
+    var id: String { name }
+}
+
+struct PersonalizedFitHeadlineQuote: Codable {
+    let text: String
+    let source: String
+}
+
+struct PersonalizedFit: Codable {
+    let eligibleItems: [PersonalizedFitItem]
+    let personalizedReason: String
+    let budgetFit: String  // "match" | "over" | "under" | "unknown"
+    let headlineQuote: PersonalizedFitHeadlineQuote?
 }
 
 struct VibePick: Codable {

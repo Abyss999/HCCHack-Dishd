@@ -4,6 +4,9 @@ struct RestaurantCardView: View {
     let restaurant: Restaurant
     let onSwipeLeft:  () -> Void
     let onSwipeRight: () -> Void
+    // Houston-only: pass sessionId + sessionVM to enable the personalized-fit section.
+    var sessionId: UUID? = nil
+    var sessionVM: SessionViewModel? = nil
 
     @EnvironmentObject var themeStore: ThemeStore
     @Environment(\.colorScheme) var systemScheme
@@ -12,6 +15,11 @@ struct RestaurantCardView: View {
     @State private var offset: CGSize = .zero
     @GestureState private var dragTranslation: CGSize = .zero
 
+    // Personalized-fit state
+    @State private var fitExpanded = false
+    @State private var fit: PersonalizedFit?
+    @State private var fitLoading = false
+
     private let swipeThreshold: CGFloat = 80
 
     private var totalOffsetX: CGFloat { offset.width + dragTranslation.width }
@@ -19,13 +27,15 @@ struct RestaurantCardView: View {
     private var likeProgress: CGFloat { min(max(totalOffsetX / swipeThreshold, 0), 1) }
     private var passProgress: CGFloat { min(max(-totalOffsetX / swipeThreshold, 0), 1) }
 
+    // Only show the section for Houston seed restaurants
+    private var isHouston: Bool { restaurant.isSeed == true }
+
     var body: some View {
         ZStack {
             cardContent
             likeOverlay
             passOverlay
         }
-        .frame(maxWidth: .infinity)
         .clipped()                              // hard-clip so AsyncImage / long names can't push past the card edge
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
@@ -67,26 +77,33 @@ struct RestaurantCardView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Photo — fixed height (not maxHeight) so AsyncImage's intrinsic size
             // never inflates the row past the card frame.
-            ZStack(alignment: .bottomLeading) {
-                if let urlStr = restaurant.photoUrl, let url = URL(string: urlStr) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let img):
-                            img.resizable().aspectRatio(contentMode: .fill)
-                        default:
-                            theme.surface
+            GeometryReader { geo in
+                ZStack(alignment: .bottomLeading) {
+                    if let urlStr = restaurant.photoUrl, let url = URL(string: urlStr) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let img):
+                                img.resizable()
+                                    .scaledToFill()
+                                    .frame(width: geo.size.width, height: 280)
+                                    .clipped()
+                            default:
+                                theme.surface
+                                    .frame(width: geo.size.width, height: 280)
+                            }
                         }
-                    }
-                } else {
-                    ZStack {
-                        theme.surface
-                        Image(systemName: "fork.knife")
-                            .font(.system(size: 40))
-                            .foregroundColor(theme.textTertiary)
+                        .frame(width: geo.size.width, height: 280)
+                    } else {
+                        ZStack {
+                            theme.surface
+                            Image(systemName: "fork.knife")
+                                .font(.system(size: 40))
+                                .foregroundColor(theme.textTertiary)
+                        }
+                        .frame(width: geo.size.width, height: 280)
                     }
                 }
             }
-            .frame(maxWidth: .infinity)
             .frame(height: 280)
             .clipped()
 
@@ -145,6 +162,11 @@ struct RestaurantCardView: View {
                     }
                 }
 
+                // Personalized-fit section (Houston only)
+                if isHouston && sessionId != nil {
+                    fitSection
+                }
+
                 // Action buttons
                 HStack(spacing: 12) {
                     Button {
@@ -186,6 +208,174 @@ struct RestaurantCardView: View {
             }
             .padding(16)
             .background(theme.cardBg)
+        }
+    }
+
+    // MARK: Personalized fit section
+
+    @ViewBuilder private var fitSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Collapsed header — always visible
+            Button {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    fitExpanded.toggle()
+                }
+                if fitExpanded && fit == nil && !fitLoading {
+                    Task { await loadFit() }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Text("✨ Why this fits you")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(theme.primary)
+                    Spacer()
+                    Image(systemName: fitExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(theme.primary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(theme.primary.opacity(0.08))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(theme.primary.opacity(0.25), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+
+            // Expanded content
+            if fitExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    if fitLoading && fit == nil {
+                        HStack(spacing: 8) {
+                            ProgressView().tint(theme.primary).scaleEffect(0.7)
+                            Text("Personalizing…")
+                                .font(.system(size: 11))
+                                .foregroundColor(theme.textSecondary)
+                        }
+                        .padding(.vertical, 6)
+                    } else if let fit = fit {
+                        fitContent(fit)
+                    }
+                }
+                .padding(.top, 10)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 4)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    @ViewBuilder private func fitContent(_ fit: PersonalizedFit) -> some View {
+        // Personalized reason
+        Text(fit.personalizedReason)
+            .font(.system(size: 12))
+            .foregroundColor(theme.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+
+        // Eligible items
+        if !fit.eligibleItems.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(fit.eligibleItems.prefix(4)) { item in
+                    HStack(alignment: .top, spacing: 6) {
+                        Text("•")
+                            .font(.system(size: 11))
+                            .foregroundColor(theme.primary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 4) {
+                                Text(item.name)
+                                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                    .foregroundColor(theme.text)
+                                ForEach(item.tags.prefix(2), id: \.self) { tag in
+                                    Text(tagEmoji(tag) + tag)
+                                        .font(.system(size: 10))
+                                        .foregroundColor(theme.primary)
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 1)
+                                        .background(theme.primary.opacity(0.12))
+                                        .cornerRadius(4)
+                                }
+                            }
+                            if let quote = item.reviewQuote, let source = item.reviewSource {
+                                Text("\"\(quote)\" \u{2014} \(source)")
+                                    .font(.system(size: 10, design: .default))
+                                    .foregroundColor(theme.textTertiary)
+                                    .lineLimit(2)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Budget fit
+        HStack(spacing: 4) {
+            Image(systemName: budgetFitIcon(fit.budgetFit))
+                .font(.system(size: 11))
+                .foregroundColor(budgetFitColor(fit.budgetFit))
+            Text(budgetFitLabel(fit.budgetFit))
+                .font(.system(size: 11))
+                .foregroundColor(theme.textSecondary)
+        }
+
+        // Headline vibe quote
+        if let q = fit.headlineQuote {
+            Text("\"\(q.text)\" \u{2014} \(q.source)")
+                .font(.system(size: 11, design: .default).italic())
+                .foregroundColor(theme.textTertiary)
+                .lineLimit(3)
+        }
+    }
+
+    // MARK: Helpers
+
+    private func loadFit() async {
+        guard let sid = sessionId, let svm = sessionVM else { return }
+        fitLoading = true
+        defer { fitLoading = false }
+        fit = try? await svm.fetchPersonalizedFit(restaurantId: restaurant.id, sessionId: sid)
+    }
+
+    func prefetchFit() {
+        guard isHouston, sessionId != nil, fit == nil, !fitLoading else { return }
+        Task { await loadFit() }
+    }
+
+    private func tagEmoji(_ tag: String) -> String {
+        switch tag {
+        case "vegan", "plant-based": return "🌱 "
+        case "gluten-free": return "🌾 "
+        case "dairy-free": return "🥛 "
+        case "halal": return "☪️ "
+        case "kosher": return "✡️ "
+        default: return ""
+        }
+    }
+
+    private func budgetFitIcon(_ fit: String) -> String {
+        switch fit {
+        case "match": return "checkmark.circle.fill"
+        case "over": return "exclamationmark.triangle.fill"
+        case "under": return "chevron.down.circle.fill"
+        default: return "minus.circle"
+        }
+    }
+
+    private func budgetFitColor(_ fit: String) -> Color {
+        switch fit {
+        case "match": return .green
+        case "over": return .orange
+        default: return theme.textTertiary
+        }
+    }
+
+    private func budgetFitLabel(_ fit: String) -> String {
+        switch fit {
+        case "match": return "Within your budget"
+        case "over": return "Above your budget"
+        case "under": return "Below your budget"
+        default: return "Budget not set"
         }
     }
 

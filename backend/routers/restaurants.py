@@ -7,8 +7,10 @@ from config import get_settings
 from deps import get_current_user
 from models.restaurant import Restaurant
 from models.user import User
+from schemas.personalized_fit import PersonalizedFitOut
 from schemas.restaurant import RestaurantOut
 from security import limiter
+from services.gemini_service import GeminiService, get_gemini_service
 from services.places_service import GroupFilter, PRICE_LEVEL_BY_TIER, PlacesService, get_places_service
 from services.session_service import SessionService, get_session_service
 
@@ -155,3 +157,28 @@ async def list_restaurants(
         ]
 
     return [RestaurantOut(**r.model_dump()) for r in restaurants]
+
+
+@router.get("/{restaurant_id}/personalized-fit", response_model=PersonalizedFitOut)
+async def personalized_fit(
+    restaurant_id: UUID,
+    session_id: UUID,
+    current: User = Depends(get_current_user),
+    sessions: SessionService = Depends(get_session_service),
+    gemini: GeminiService = Depends(get_gemini_service),
+) -> PersonalizedFitOut:
+    """Houston-only. Returns a Gemini-powered 'why this fits you' for one restaurant.
+    Returns 404 for non-seed restaurants so iOS can silently skip the section."""
+    session = await sessions.get_by_id(session_id)
+    if not sessions.is_member(session, current.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a session member")
+
+    restaurant = await Restaurant.get(restaurant_id)
+    if restaurant is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Restaurant not found")
+
+    if not restaurant.is_seed:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not a Houston seed restaurant")
+
+    result = await gemini.personalized_fit(restaurant, current)
+    return PersonalizedFitOut(**result)

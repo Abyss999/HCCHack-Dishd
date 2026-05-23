@@ -78,7 +78,9 @@ struct SwipeView: View {
                         },
                         onAdvance: { restaurant in
                             vm.markSwiped(restaurant)
-                        }
+                        },
+                        sessionId: sessionId,
+                        sessionVM: sessionVM
                     )
                     .padding(.horizontal, 20)
                     .padding(.top, 20)

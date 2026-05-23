@@ -1,10 +1,11 @@
-"""Vibe-pick: pick one restaurant from the group's top-3 using Gemini.
+"""Vibe-pick and personalized-fit via Gemini.
 
 Lazy-fetches Google Places reviews for top-3 candidates on first call and
 caches them on the Restaurant document so future demo runs skip the API.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Any
 
@@ -13,7 +14,7 @@ from fastapi import HTTPException, status
 
 from config import Settings, get_settings
 from models.restaurant import Restaurant
-from models.user import User
+from models.user import User, UserPreferences
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 PLACE_DETAILS_URL = "https://maps.googleapis.com/maps/api/place/details/json"
@@ -97,6 +98,9 @@ class GeminiService:
 
     @staticmethod
     def _build_prompt(members: list[User], top: list[dict[str, Any]]) -> str:
+        is_houston = all(row["restaurant"].is_seed for row in top)
+        is_solo = len(members) == 1
+
         group_prefs = []
         for u in members:
             p = u.preferences
@@ -110,16 +114,14 @@ class GeminiService:
         candidates = []
         for row in top:
             r: Restaurant = row["restaurant"]
-            # menu_with_reviews is the strongest signal — dish-level quotes from real
-            # reviews. Fall back to generic reviews when those aren't available.
             menu_with_reviews = [
                 {
                     "item": mr.get("item"),
-                    "quotes": [q.get("text") for q in (mr.get("quotes") or [])],
+                    "quotes": [{"text": q.get("text"), "source": q.get("source")} for q in (mr.get("quotes") or [])],
                 }
                 for mr in (r.menu_reviews or [])
             ]
-            vibe_quotes = [q.get("text") for q in (r.overall_vibe_quotes or [])]
+            vibe_quotes = [{"text": q.get("text"), "source": q.get("source")} for q in (r.overall_vibe_quotes or [])]
             candidates.append({
                 "name": r.name,
                 "cuisine_tags": r.cuisine_tags,
@@ -133,7 +135,7 @@ class GeminiService:
                 "group_yes_pct": row["score_pct"],
             })
 
-        return (
+        base_instruction = (
             "You are picking one restaurant for a group based on vibe, group preferences, "
             "and real customer reviews. The group already voted; here are their top 3.\n\n"
             f"GROUP MEMBERS AND PREFERENCES:\n{json.dumps(group_prefs, indent=2)}\n\n"
@@ -144,13 +146,207 @@ class GeminiService:
             "  2. vibe_quotes — atmosphere quotes from real diners.\n"
             "  3. generic_reviews and vibe_blurb — fallback context.\n"
             "  4. group_yes_pct — tie-breaker only.\n\n"
-            "In your reasoning, name AT LEAST ONE specific menu item from menu_with_reviews "
-            "and quote 3-8 words from a real review verbatim (in quotes), explaining WHY that "
-            "dish/quote fits the group's preferences. Quote ONLY text that appears in the "
-            "data — do not paraphrase or invent.\n\n"
-            'Respond ONLY with JSON: {"pick": "<exact restaurant name>", '
+        )
+
+        if is_houston:
+            all_dietary = [r for u in group_prefs for r in u["dietary"]]
+            dietary_intersection = list(set(all_dietary))
+
+            if is_solo:
+                user = group_prefs[0]
+                dietary_note = (
+                    f"The user is {user['name']}. "
+                    f"They have dietary restrictions: {user['dietary'] or 'none'}. "
+                    f"Your reasoning MUST address {user['name']} by name, "
+                    f"name AT LEAST ONE specific dish they can eat (respecting {user['dietary'] or 'no'} dietary restrictions), "
+                    f"explain why it fits their cuisine preferences ({user['cuisines'] or 'not specified'}), "
+                    "and quote 3-8 words verbatim from a real menu_with_reviews quote with source attribution."
+                )
+            else:
+                names = [u["name"] for u in group_prefs]
+                strict_members = [u["name"] for u in group_prefs if u["dietary"]]
+                if dietary_intersection:
+                    dietary_note = (
+                        f"The group is {', '.join(names)}. "
+                        f"Shared dietary needs across the group: {dietary_intersection}. "
+                        "Your reasoning MUST identify the dietary intersection ('everyone can eat plant-based here') "
+                        "or note that the restaurant accommodates the strictest member "
+                        f"({', '.join(strict_members) if strict_members else 'no strict members'}). "
+                        "Name AT LEAST ONE specific dish and quote 3-8 words verbatim from a real review with source."
+                    )
+                else:
+                    dietary_note = (
+                        f"The group is {', '.join(names)}. No shared dietary restrictions. "
+                        "Name AT LEAST ONE specific dish from menu_with_reviews "
+                        "and quote 3-8 words verbatim from a real review with source attribution."
+                    )
+
+            reasoning_instruction = (
+                f"{dietary_note}\n\n"
+                "Quote ONLY text that appears in the data — do not paraphrase or invent. "
+                "Keep reasoning to 3-4 sentences max.\n\n"
+            )
+        else:
+            reasoning_instruction = (
+                "In your reasoning, name AT LEAST ONE specific menu item from menu_with_reviews "
+                "and quote 3-8 words from a real review verbatim (in quotes), explaining WHY that "
+                "dish/quote fits the group's preferences. Quote ONLY text that appears in the "
+                "data — do not paraphrase or invent.\n\n"
+            )
+
+        return (
+            base_instruction
+            + reasoning_instruction
+            + 'Respond ONLY with JSON: {"pick": "<exact restaurant name>", '
             '"reasoning": "<3-4 sentences. Mention at least one menu item by name and one short verbatim review quote.>"}'
         )
+
+
+    # ------------------------------------------------------------------
+    # Feature 1: personalized-fit for a single Houston restaurant
+    # ------------------------------------------------------------------
+
+    async def personalized_fit(
+        self,
+        restaurant: Restaurant,
+        user: User,
+    ) -> dict[str, Any]:
+        """Return a personalized-fit dict for `restaurant` given `user` prefs.
+
+        Caches on `restaurant.personalized_fits[cache_key]` so repeat calls
+        by the same user (same prefs hash) are free.
+        """
+        prefs = user.preferences
+        cache_key = f"{user.id}:{_prefs_hash(prefs)}"
+
+        if cache_key in restaurant.personalized_fits:
+            return restaurant.personalized_fits[cache_key]
+
+        if not self.settings.google_gemini_api_key:
+            return _fit_fallback(restaurant, prefs)
+
+        try:
+            async with httpx.AsyncClient(timeout=12.0) as http:
+                prompt = self._build_fit_prompt(restaurant, prefs)
+                resp = await http.post(
+                    f"{GEMINI_URL}?key={self.settings.google_gemini_api_key}",
+                    json={
+                        "contents": [{"parts": [{"text": prompt}]}],
+                        "generationConfig": {
+                            "temperature": 0.5,
+                            "responseMimeType": "application/json",
+                        },
+                    },
+                )
+                if resp.status_code >= 400:
+                    return _fit_fallback(restaurant, prefs)
+
+                body = resp.json()
+                text = body["candidates"][0]["content"]["parts"][0]["text"]
+                result: dict[str, Any] = json.loads(text)
+        except Exception:
+            return _fit_fallback(restaurant, prefs)
+
+        # Persist the cache entry — fire-and-forget style; don't let a save
+        # failure block the caller.
+        try:
+            restaurant.personalized_fits = {**restaurant.personalized_fits, cache_key: result}
+            await restaurant.save()
+        except Exception:
+            pass
+
+        return result
+
+    @staticmethod
+    def _build_fit_prompt(restaurant: Restaurant, prefs: UserPreferences) -> str:
+        price_tiers = ["$", "$$", "$$$", "$$$$"]
+        user_budget = prefs.budget_range
+        r_tier = restaurant.price_tier
+
+        if user_budget and r_tier:
+            if price_tiers.index(r_tier) <= price_tiers.index(user_budget):
+                budget_fit = "match"
+            else:
+                budget_fit = "over"
+        elif user_budget:
+            budget_fit = "unknown"
+        else:
+            budget_fit = "unknown"
+
+        menu_with_reviews = [
+            {
+                "item": mr.get("item"),
+                "quotes": [{"text": q.get("text"), "source": q.get("source")} for q in (mr.get("quotes") or [])[:2]],
+            }
+            for mr in (restaurant.menu_reviews or [])
+        ]
+        vibe_quotes = [{"text": q.get("text"), "source": q.get("source")} for q in (restaurant.overall_vibe_quotes or [])[:3]]
+
+        data = {
+            "restaurant": {
+                "name": restaurant.name,
+                "cuisine_tags": restaurant.cuisine_tags,
+                "price_tier": r_tier,
+                "menu": restaurant.menu,
+                "vibe_blurb": restaurant.vibe_blurb,
+                "menu_with_reviews": menu_with_reviews,
+                "vibe_quotes": vibe_quotes,
+            },
+            "user_prefs": {
+                "dietary_restrictions": prefs.dietary_restrictions,
+                "cuisine_preferences": prefs.cuisine_preferences,
+                "budget_range": user_budget,
+            },
+            "precomputed_budget_fit": budget_fit,
+        }
+
+        return (
+            "You are helping a user decide whether a restaurant fits them. "
+            "Based on the restaurant data and user preferences below, return ONLY JSON "
+            "with exactly these fields:\n"
+            '- "eligible_items": array of 2-4 menu items the user can likely eat given their '
+            "dietary restrictions. Each item: "
+            '{"name": str, "tags": [str], "review_quote": str|null, "review_source": str|null}. '
+            "Tags must only be from: vegan, plant-based, gluten-free, dairy-free, nut-free, halal, kosher. "
+            "Only add a tag if you are confident from the dish name/context. "
+            "If no dietary restrictions, pick the 2-4 most appealing items. "
+            'Add "review_quote" and "review_source" from menu_with_reviews when available.\n'
+            '- "personalized_reason": 1-2 sentences. Mention at least one dish by name. '
+            "Explain why this restaurant fits their cuisine_preferences. "
+            "If dietary restrictions exist, confirm the dish works. "
+            "Be specific — do not be generic.\n"
+            f'- "budget_fit": use the precomputed value "{budget_fit}" exactly.\n'
+            '- "headline_quote": pick the single most compelling quote from vibe_quotes, '
+            'as {"text": str, "source": str}. Null if none available.\n\n'
+            f"DATA:\n{json.dumps(data, indent=2)}"
+        )
+
+
+def _prefs_hash(prefs: UserPreferences) -> str:
+    key = json.dumps({
+        "dietary": sorted(prefs.dietary_restrictions),
+        "cuisines": sorted(prefs.cuisine_preferences),
+        "budget": prefs.budget_range,
+    }, sort_keys=True)
+    return hashlib.sha256(key.encode()).hexdigest()[:16]
+
+
+def _fit_fallback(restaurant: Restaurant, prefs: UserPreferences) -> dict[str, Any]:
+    """Graceful fallback: return menu items without tags, no Gemini reasoning."""
+    items = [{"name": m, "tags": [], "review_quote": None, "review_source": None} for m in restaurant.menu[:4]]
+    price_tiers = ["$", "$$", "$$$", "$$$$"]
+    user_budget = prefs.budget_range
+    r_tier = restaurant.price_tier
+    if user_budget and r_tier:
+        budget_fit = "match" if price_tiers.index(r_tier) <= price_tiers.index(user_budget) else "over"
+    else:
+        budget_fit = "unknown"
+    return {
+        "eligible_items": items,
+        "personalized_reason": f"Check out {restaurant.name} for {', '.join(restaurant.cuisine_tags[:2])} cuisine.",
+        "budget_fit": budget_fit,
+        "headline_quote": None,
+    }
 
 
 def get_gemini_service() -> GeminiService:

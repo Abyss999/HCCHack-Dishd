@@ -25,6 +25,9 @@ class Restaurant(Document):
     # overall_vibe_quotes entries: {"text": str, "source": str}
     overall_vibe_quotes: list[dict] = Field(default_factory=list)
     is_seed: bool = False  # True for hand-curated demo rows; keeps the demo path isolated from Google upserts
+    # Keyed by "{user_id}:{prefs_hash}" — cached Gemini personalized-fit results.
+    # Value shape matches PersonalizedFitOut schema.
+    personalized_fits: dict[str, dict] = Field(default_factory=dict)
 
     class Settings:
         name = "restaurants"
