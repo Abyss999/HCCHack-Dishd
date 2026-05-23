@@ -190,146 +190,148 @@ struct CreateSessionSheet: View {
                 .padding(.top, 12)
                 .padding(.bottom, 14)
 
-                // Header
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(soloMode ? "Solo Session Setup" : "Session Setup")
-                        .font(.system(size: 22, weight: .black))
-                        .foregroundColor(theme.text)
-                    Text("Search or tap the map to set your area.")
-                        .font(.system(size: 14))
-                        .foregroundColor(theme.textSecondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 12)
-
-                // Search bar
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(theme.textSecondary)
-                        .font(.system(size: 14))
-
-                    TextField("Search for a city or neighborhood…", text: $searchText)
-                        .font(.system(size: 15))
-                        .foregroundColor(theme.text)
-                        .focused($searchFocused)
-                        .submitLabel(.search)
-                        .onSubmit { Task { await runSearch() } }
-
-                    if isSearching {
-                        ProgressView().tint(theme.primary).scaleEffect(0.75)
-                    } else if !searchText.isEmpty {
-                        Button { searchText = "" } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(theme.textSecondary)
-                                .font(.system(size: 14))
-                        }
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(theme.inputBg)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(theme.inputBorder))
-                .cornerRadius(10)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 10)
-
-                // Map
-                TappableMapView(
-                    pinnedCoordinate: pinnedCoordinate,
-                    centerOn: centerOn,
-                    onTap: { coord in
-                        searchFocused = false
-                        pinnedCoordinate = coord
-                        reverseGeocode(coord)
-                    }
-                )
-                .frame(maxHeight: .infinity)
-
-                // Bottom strip
-                VStack(spacing: 12) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(theme.primary)
-                            .font(.system(size: 16))
-
-                        if isGeocoding {
-                            ProgressView().tint(theme.primary).scaleEffect(0.75)
-                            Text("Finding location…")
-                                .font(.system(size: 14))
-                                .foregroundColor(theme.textSecondary)
-                        } else if !locationLabel.isEmpty {
-                            Text(locationLabel)
-                                .font(.system(size: 14, weight: .medium))
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        // Header
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(soloMode ? "Solo Session" : "New Session")
+                                .font(.system(size: 22, weight: .black))
                                 .foregroundColor(theme.text)
-                                .lineLimit(1)
-                        } else {
-                            Text("Search or tap anywhere on the map")
+                            Text("Search or tap the map to set your area.")
                                 .font(.system(size: 14))
                                 .foregroundColor(theme.textSecondary)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Spacer()
+                        // Search bar
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(theme.textSecondary)
+                                .font(.system(size: 14))
 
-                        Button {
-                            locationMgr.onResolved = { coord in
-                                pinnedCoordinate = coord
-                                centerOn = coord
-                                reverseGeocode(coord)
-                            }
-                            locationMgr.requestLocation()
-                        } label: {
-                            HStack(spacing: 4) {
-                                if locationMgr.isLoading {
-                                    ProgressView().tint(theme.primary).scaleEffect(0.65)
-                                } else {
-                                    Image(systemName: "location.fill")
-                                        .font(.system(size: 12))
+                            TextField("Search for a city or neighborhood…", text: $searchText)
+                                .font(.system(size: 15))
+                                .foregroundColor(theme.text)
+                                .focused($searchFocused)
+                                .submitLabel(.search)
+                                .onSubmit { Task { await runSearch() } }
+
+                            if isSearching {
+                                ProgressView().tint(theme.primary).scaleEffect(0.75)
+                            } else if !searchText.isEmpty {
+                                Button { searchText = "" } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(theme.textSecondary)
+                                        .font(.system(size: 14))
                                 }
-                                Text("My Location")
-                                    .font(.system(size: 13, weight: .medium))
                             }
-                            .foregroundColor(theme.primary)
                         }
-                        .disabled(locationMgr.isLoading)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(theme.surface)
-                    .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.cardBorder))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(theme.inputBg)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(theme.inputBorder))
+                        .cornerRadius(10)
 
-                    if let err = locationMgr.error {
-                        Text(err).font(.system(size: 12)).foregroundColor(.red)
-                    }
-
-                    // Session settings
-                    settingsSection
-
-                    PrimaryButton(
-                        title: soloMode ? "Start Solo Session" : "Create Session",
-                        isLoading: homeVM.isLoading,
-                        isDisabled: pinnedCoordinate == nil && locationLabel.isEmpty
-                    ) {
-                        Task {
-                            let lat = pinnedCoordinate?.latitude ?? 0
-                            let lng = pinnedCoordinate?.longitude ?? 0
-                            await homeVM.createSession(
-                                lat: lat, lng: lng,
-                                label: locationLabel.isEmpty ? nil : locationLabel,
-                                soloMode: soloMode,
-                                cuisineOverrides: sessionCuisines.isEmpty ? nil : sessionCuisines,
-                                radiusKmOverride: sessionRadius,
-                                budgetOverrides: sessionBudgets.isEmpty ? nil : sessionBudgets,
-                                swipeCeilingOverride: Int(sessionSwipeCeiling)
+                        // Map — fixed height so it never gets squished
+                        VStack(spacing: 0) {
+                            TappableMapView(
+                                pinnedCoordinate: pinnedCoordinate,
+                                centerOn: centerOn,
+                                onTap: { coord in
+                                    searchFocused = false
+                                    pinnedCoordinate = coord
+                                    reverseGeocode(coord)
+                                }
                             )
-                            dismiss()
+                            .frame(height: 240)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                            // Location strip
+                            HStack(spacing: 8) {
+                                Image(systemName: "mappin.circle.fill")
+                                    .foregroundColor(theme.primary)
+                                    .font(.system(size: 15))
+
+                                if isGeocoding {
+                                    ProgressView().tint(theme.primary).scaleEffect(0.75)
+                                    Text("Finding location…")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(theme.textSecondary)
+                                } else if !locationLabel.isEmpty {
+                                    Text(locationLabel)
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(theme.text)
+                                        .lineLimit(1)
+                                } else {
+                                    Text("Search or tap anywhere on the map")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(theme.textSecondary)
+                                }
+
+                                Spacer()
+
+                                Button {
+                                    locationMgr.onResolved = { coord in
+                                        pinnedCoordinate = coord
+                                        centerOn = coord
+                                        reverseGeocode(coord)
+                                    }
+                                    locationMgr.requestLocation()
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        if locationMgr.isLoading {
+                                            ProgressView().tint(theme.primary).scaleEffect(0.65)
+                                        } else {
+                                            Image(systemName: "location.fill")
+                                                .font(.system(size: 11))
+                                        }
+                                        Text("My Location")
+                                            .font(.system(size: 12, weight: .medium))
+                                    }
+                                    .foregroundColor(theme.primary)
+                                }
+                                .disabled(locationMgr.isLoading)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(theme.surface)
+                            .cornerRadius(10)
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(theme.cardBorder))
+                            .padding(.top, 8)
+                        }
+
+                        if let err = locationMgr.error {
+                            Text(err).font(.system(size: 12)).foregroundColor(.red)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+
+                        // Session settings card
+                        settingsSection
+
+                        PrimaryButton(
+                            title: soloMode ? "Start Solo Session" : "Create Session",
+                            isLoading: homeVM.isLoading,
+                            isDisabled: pinnedCoordinate == nil && locationLabel.isEmpty
+                        ) {
+                            Task {
+                                let lat = pinnedCoordinate?.latitude ?? 0
+                                let lng = pinnedCoordinate?.longitude ?? 0
+                                await homeVM.createSession(
+                                    lat: lat, lng: lng,
+                                    label: locationLabel.isEmpty ? nil : locationLabel,
+                                    soloMode: soloMode,
+                                    cuisineOverrides: sessionCuisines.isEmpty ? nil : sessionCuisines,
+                                    radiusKmOverride: sessionRadius,
+                                    budgetOverrides: sessionBudgets.isEmpty ? nil : sessionBudgets,
+                                    swipeCeilingOverride: Int(sessionSwipeCeiling)
+                                )
+                                dismiss()
+                            }
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 32)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
             }
         }
         .presentationDetents([.large])
@@ -349,99 +351,124 @@ struct CreateSessionSheet: View {
     }
 
     @ViewBuilder private var settingsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("SESSION FILTERS")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(theme.textSecondary.opacity(0.7))
-                .tracking(0.6)
+        VStack(alignment: .leading, spacing: 14) {
+            sectionTitle("SESSION FILTERS")
 
             // Radius slider
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Max range")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(theme.textSecondary)
-                    Spacer()
-                    Text("\(radiusMiles, specifier: "%.0f") mi")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(theme.primary)
+            settingRow(label: "Max range") {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Range")
+                            .font(.system(size: 13))
+                            .foregroundColor(theme.textSecondary)
+                        Spacer()
+                        Text("\(radiusMiles, specifier: "%.0f") mi")
+                            .font(.system(size: 15, weight: .bold, design: .monospaced))
+                            .foregroundColor(theme.primary)
+                    }
+                    Slider(value: $sessionRadius, in: radiusMinKm...radiusMaxKm, step: 0.8)
+                        .tint(theme.primary)
                 }
-                Slider(value: $sessionRadius, in: radiusMinKm...radiusMaxKm, step: 0.8)
-                    .tint(theme.primary)
             }
 
-            // Swipe limit slider — forces Top-3 reveal once every member hits this count
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Swipe limit per person")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(theme.textSecondary)
-                    Spacer()
-                    Text("\(Int(sessionSwipeCeiling))")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(theme.primary)
+            settingsDivider
+
+            // Swipe limit
+            settingRow(label: "Swipe limit per person") {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Limit")
+                            .font(.system(size: 13))
+                            .foregroundColor(theme.textSecondary)
+                        Spacer()
+                        Text("\(Int(sessionSwipeCeiling))")
+                            .font(.system(size: 15, weight: .bold, design: .monospaced))
+                            .foregroundColor(theme.primary)
+                    }
+                    Slider(value: $sessionSwipeCeiling, in: 3...30, step: 1)
+                        .tint(theme.primary)
                 }
-                Slider(value: $sessionSwipeCeiling, in: 3...30, step: 1)
-                    .tint(theme.primary)
             }
+
+            settingsDivider
 
             // Budget (multi-select)
-            HStack(spacing: 6) {
-                ForEach(budgetOptions, id: \.self) { b in
-                    Button {
-                        if sessionBudgets.contains(b) {
-                            sessionBudgets.removeAll { $0 == b }
-                        } else {
-                            sessionBudgets.append(b)
+            settingRow(label: "Budget") {
+                HStack(spacing: 8) {
+                    ForEach(budgetOptions, id: \.self) { b in
+                        let sel = sessionBudgets.contains(b)
+                        Button {
+                            if sel { sessionBudgets.removeAll { $0 == b } }
+                            else { sessionBudgets.append(b) }
+                        } label: {
+                            Text(b)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(sel ? theme.primary : theme.textSecondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(sel ? theme.chipBg : theme.bg)
+                                .cornerRadius(10)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(sel ? theme.chipBorder : theme.cardBorder, lineWidth: 1))
                         }
-                    } label: {
-                        Text(b)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(sessionBudgets.contains(b) ? theme.primary : theme.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
-                            .background(sessionBudgets.contains(b) ? theme.chipBg : theme.bg)
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(sessionBudgets.contains(b) ? theme.chipBorder : theme.cardBorder, lineWidth: 1)
-                            )
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
 
+            settingsDivider
+
             // Cuisine chips
-            let columns = [GridItem(.adaptive(minimum: 88), spacing: 6)]
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 6) {
-                ForEach(cuisineOptions, id: \.self) { c in
-                    Button {
-                        if sessionCuisines.contains(c) {
-                            sessionCuisines.removeAll { $0 == c }
-                        } else {
-                            sessionCuisines.append(c)
+            settingRow(label: "Cuisines") {
+                let columns = [GridItem(.adaptive(minimum: 100), spacing: 8)]
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+                    ForEach(cuisineOptions, id: \.self) { c in
+                        let sel = sessionCuisines.contains(c)
+                        Button {
+                            if sel { sessionCuisines.removeAll { $0 == c } }
+                            else { sessionCuisines.append(c) }
+                        } label: {
+                            Text(c)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(sel ? theme.primary : theme.textSecondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(sel ? theme.chipBg : theme.bg)
+                                .cornerRadius(10)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(sel ? theme.chipBorder : theme.cardBorder, lineWidth: 1))
                         }
-                    } label: {
-                        Text(c)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(sessionCuisines.contains(c) ? theme.primary : theme.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 5)
-                            .background(sessionCuisines.contains(c) ? theme.chipBg : theme.bg)
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(sessionCuisines.contains(c) ? theme.chipBorder : theme.cardBorder, lineWidth: 1)
-                            )
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
-        .padding(12)
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.surface)
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.cardBorder))
+        .cornerRadius(14)
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardBorder, lineWidth: 1))
+    }
+
+    private func sectionTitle(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .bold))
+            .tracking(0.6)
+            .foregroundColor(theme.textSecondary.opacity(0.7))
+    }
+
+    @ViewBuilder
+    private func settingRow<Content: View>(label: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(theme.text)
+            content()
+        }
+    }
+
+    private var settingsDivider: some View {
+        Rectangle()
+            .fill(theme.textSecondary.opacity(0.12))
+            .frame(height: 1)
     }
 
     private func runSearch() async {

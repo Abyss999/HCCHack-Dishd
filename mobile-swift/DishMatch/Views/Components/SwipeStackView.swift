@@ -17,6 +17,10 @@ struct SwipeStackView: View {
             // intrinsic size + spring animations can't ever make it visually wider than
             // the SwipeView container.
             GeometryReader { geo in
+                // Hard cap so a transient layout pass can't ever inflate the card past the
+                // device width minus the parent's padding. 380pt comfortably fits the
+                // narrowest iPhone (iPhone SE @ 320pt minus padding) and clamps tablets.
+                let w = min(geo.size.width, 380)
                 ZStack {
                     if restaurants.count > 1 {
                         RoundedRectangle(cornerRadius: 16)
@@ -25,7 +29,7 @@ struct SwipeStackView: View {
                                 RoundedRectangle(cornerRadius: 16)
                                     .stroke(theme.cardBorder, lineWidth: 1)
                             )
-                            .frame(width: geo.size.width, height: 520)
+                            .frame(width: w, height: 520)
                             .scaleEffect(0.96)
                             .offset(y: 10)
                             .zIndex(0)
@@ -45,7 +49,7 @@ struct SwipeStackView: View {
                             Task { await onSwipe(top, .yes) }
                         }
                     )
-                    .frame(width: geo.size.width, height: 520)
+                    .frame(width: w, height: 520)
                     .id(restaurants[0].id)
                     .zIndex(1)
                 }
