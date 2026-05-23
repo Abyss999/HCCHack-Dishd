@@ -91,11 +91,11 @@ HCCHack/
 docker compose up -d                    # mongo + mongo-express (only needed for local target)
 pip install -r requirements.txt
 cp .env.example .env                    # then fill values
-uvicorn main:app --reload               # http://localhost:8000/docs
+uvicorn main:app --reload --port 8001   # http://localhost:8001/docs
 
 # mobile: open in Xcode
 open mobile-swift/DishMatch.xcodeproj  # then Cmd+R to run on simulator
-# API_BASE_URL in mobile-swift/DishMatch/Config/Debug.xcconfig defaults to localhost:8000
+# API_BASE_URL in mobile-swift/DishMatch/Config/Debug.xcconfig points to localhost:8001
 ```
 
 ## MongoDB target switching
@@ -187,6 +187,21 @@ Key dark-mode values: `bg: #0a0a0a`, `surface: #1a1a1a`, `surfaceLight: #262626`
 - **CodeDisplay boxes** — 50×50, primary border at 40% opacity, IBM Plex Mono 18px primary text.
 - **Home header** — compact with bottom divider at 6% white opacity.
 - **"How it works" tips** — left-border accent block: 3pt left border at 40% primary opacity, warm-tinted background.
+
+## Simulator noise (safe to ignore)
+
+Running in the iOS simulator produces several recurring log lines that are **not app bugs**:
+
+| Log pattern | Cause | Action |
+|---|---|---|
+| `Failed to send CA Event for app launch measurements` | Simulator telemetry stub | Ignore |
+| `Unable to simultaneously satisfy constraints` (accessoryView.bottom / inputView.top) | UIKit internal keyboard layout conflict — iOS bug in simulator, not app code | Ignore |
+| `CHHapticPattern patternForKey: hapticpatternlibrary.plist couldn't be opened` | Haptic asset files absent from simulator environment | Ignore |
+| `System gesture gate timed out` | Simulator gesture recognizer noise | Ignore |
+| `Could not find cached accumulator for token` | UIKit keyboard candidate cache noise | Ignore |
+| `-[RTIInputSystemClient remoteTextInputSessionWithID:performInputOperation:] requires a valid sessionID` | UIKit keyboard input session noise | Ignore |
+
+**Real errors to act on:** `NSURLErrorDomain Code=-1004 "Could not connect to the server."` — means the backend is not running on port 8001. Start it with `uvicorn main:app --reload --port 8001`.
 
 ## Pointers
 
