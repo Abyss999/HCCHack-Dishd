@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -15,7 +15,7 @@ class Swipe(Document):
     user_id: UUID
     restaurant_id: UUID
     direction: SwipeDirection
-    swiped_at: datetime = Field(default_factory=datetime.utcnow)
+    swiped_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "swipes"
