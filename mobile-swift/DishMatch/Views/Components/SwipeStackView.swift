@@ -57,6 +57,7 @@ struct SwipeStackView: View {
                 }
             )
             .frame(width: cardW, height: cardH)
+            .clipped()
             .id(restaurants[0].id)
             .zIndex(1)
         }

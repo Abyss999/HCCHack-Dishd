@@ -24,12 +24,16 @@ class Database:
 
     @classmethod
     async def _fix_indexes(cls, db) -> None:
-        # Drop apple_id index if it exists without sparse=true so Beanie can recreate it correctly.
+        # Beanie strips the sparse option when building createIndex commands, so we manage
+        # the apple_id sparse unique index manually: drop any existing version, then recreate.
         try:
-            info = await db["users"].index_information()
-            idx = info.get("apple_id_1", {})
-            if idx and not idx.get("sparse", False):
-                await db["users"].drop_index("apple_id_1")
+            await db["users"].drop_index("apple_id_1")
+        except Exception:
+            pass
+        try:
+            await db["users"].create_index(
+                "apple_id", unique=True, sparse=True, name="apple_id_1"
+            )
         except Exception:
             pass
 

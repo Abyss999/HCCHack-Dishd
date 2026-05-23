@@ -17,6 +17,8 @@ final class AuthViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             try await auth.login(email: email.lowercased(), password: password)
+        } catch APIError.unauthorized {
+            errorMessage = "Invalid email or password."
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -28,6 +30,8 @@ final class AuthViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             try await auth.signup(email: email.lowercased(), password: password, name: name)
+        } catch APIError.unauthorized {
+            errorMessage = "Invalid email or password."
         } catch {
             errorMessage = error.localizedDescription
         }
