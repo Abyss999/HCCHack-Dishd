@@ -10,35 +10,45 @@ final class SwipeViewModel: ObservableObject {
     @Published var navigateToResults = false
 
     let sessionId: UUID
-    let sessionVM: SessionViewModel
+    private(set) var sessionVM: SessionViewModel?
     let ws = WebSocketService()
 
-    init(sessionId: UUID, sessionVM: SessionViewModel) {
+    init(sessionId: UUID) {
         self.sessionId = sessionId
+    }
+
+    var restaurants: [Restaurant] { sessionVM?.restaurants ?? [] }
+    var canSeeResults: Bool { swipeCount >= 5 }
+
+    func bind(sessionVM: SessionViewModel) {
+        guard self.sessionVM == nil else { return }
         self.sessionVM = sessionVM
         setupWS()
     }
 
-    var restaurants: [Restaurant] { sessionVM.restaurants }
-    var canSeeResults: Bool { swipeCount >= 5 }
-
     func load() async {
-        try? await sessionVM.fetchRestaurants(sessionId: sessionId)
+        do {
+            try await sessionVM?.fetchRestaurants(sessionId: sessionId)
+        } catch {
+            print("[SwipeViewModel] fetchRestaurants failed: \(error)")
+        }
     }
 
     func swipe(restaurant: Restaurant, direction: SwipeDirection) async {
         do {
-            try await sessionVM.submitSwipe(
+            try await sessionVM?.submitSwipe(
                 sessionId: sessionId,
                 restaurantId: restaurant.id,
                 direction: direction
             )
             swipeCount += 1
-        } catch {}
+        } catch {
+            print("[SwipeViewModel] submitSwipe failed: \(error)")
+        }
     }
 
     private func setupWS() {
-        guard let token = sessionVM.token else { return }
+        guard let token = sessionVM?.token else { return }
         ws.connect(sessionId: sessionId, token: token)
 
         ws.onSwipeProgress = { [weak self] p in

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -26,7 +26,7 @@ class User(Document):
     name: str
     preferences: UserPreferences = Field(default_factory=UserPreferences)
     push_tokens: list[PushToken] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "users"

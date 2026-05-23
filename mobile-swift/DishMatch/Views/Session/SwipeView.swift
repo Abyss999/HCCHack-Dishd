@@ -14,10 +14,7 @@ struct SwipeView: View {
     init(sessionId: UUID, path: Binding<NavigationPath>) {
         self.sessionId = sessionId
         self._path = path
-        self._vm = StateObject(wrappedValue: SwipeViewModel(
-            sessionId: sessionId,
-            sessionVM: SessionViewModel()
-        ))
+        self._vm = StateObject(wrappedValue: SwipeViewModel(sessionId: sessionId))
     }
 
     var body: some View {
@@ -80,7 +77,10 @@ struct SwipeView: View {
             }
         }
         .navigationBarHidden(true)
-        .task { await vm.load() }
+        .task {
+            vm.bind(sessionVM: sessionVM)
+            await vm.load()
+        }
         .onChange(of: vm.navigateToResults) { navigate in
             if navigate { path.append(SessionRoute.results(sessionId)) }
         }

@@ -73,7 +73,7 @@ enum SessionRoute: Hashable {
 
 struct SessionNavigator: View {
     let sessionId: UUID
-    @StateObject private var sessionVM = SessionViewModel()
+    @ObservedObject var sessionVM: SessionViewModel
     @State private var path = NavigationPath()
 
     var body: some View {

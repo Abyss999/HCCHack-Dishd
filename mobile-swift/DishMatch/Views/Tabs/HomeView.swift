@@ -2,16 +2,14 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var themeStore: ThemeStore
+    @EnvironmentObject var authStore: AuthStore
     @Environment(\.colorScheme) var systemScheme
     var theme: AppTheme { AppTheme.current(for: themeStore.resolved(system: systemScheme)) }
 
-    @StateObject private var sessionVM = SessionViewModel()
+    @StateObject private var sessionVM: SessionViewModel
+    @StateObject private var homeVM: HomeViewModel
     @State private var joinCode = ""
     @State private var activeSession: Session?
-    @State private var showSession = false
-
-    private var vm: HomeViewModel { HomeViewModel(sessionVM: sessionVM) }
-    @StateObject private var homeVM: HomeViewModel
 
     init() {
         let svm = SessionViewModel()
@@ -99,15 +97,15 @@ struct HomeView: View {
             .navigationBarHidden(true)
         }
         .onChange(of: homeVM.createdSession) { s in
-            if let s { activeSession = s; showSession = true }
+            if let s { activeSession = s }
         }
         .onChange(of: homeVM.joinedSession) { s in
-            if let s { activeSession = s; showSession = true }
+            if let s { activeSession = s }
         }
-        .fullScreenCover(isPresented: $showSession) {
-            if let session = activeSession {
-                SessionNavigator(sessionId: session.id)
-            }
+        .fullScreenCover(item: $activeSession) { session in
+            SessionNavigator(sessionId: session.id, sessionVM: sessionVM)
+                .environmentObject(authStore)
+                .environmentObject(themeStore)
         }
         .alert("Error", isPresented: .init(
             get: { homeVM.errorMessage != nil },

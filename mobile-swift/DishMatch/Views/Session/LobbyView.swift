@@ -15,7 +15,7 @@ struct LobbyView: View {
 
     private var session: Session? { sessionVM.session }
     private var isHost: Bool { session?.hostUserId == authStore.user?.id }
-    private var canStart: Bool { members.count >= 2 }
+    private var canStart: Bool { members.count >= 1 }
 
     var body: some View {
         ZStack {
@@ -99,8 +99,13 @@ struct LobbyView: View {
         }
         .navigationBarHidden(true)
         .task {
-            try? await sessionVM.fetchSession(sessionId)
             members = sessionVM.session?.members ?? []
+            do {
+                try await sessionVM.fetchSession(sessionId)
+                members = sessionVM.session?.members ?? []
+            } catch {
+                print("[LobbyView] fetchSession failed: \(error)")
+            }
             guard let token = sessionVM.token else { return }
             ws.connect(sessionId: sessionId, token: token)
             ws.onMemberJoined = { p in

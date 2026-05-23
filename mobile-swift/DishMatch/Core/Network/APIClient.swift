@@ -8,8 +8,22 @@ final class APIClient {
 
     private static var decoder: JSONDecoder {
         let d = JSONDecoder()
-        d.dateDecodingStrategy = .iso8601
         d.keyDecodingStrategy = .convertFromSnakeCase
+        // Backend returns ISO8601 with fractional seconds (e.g. "2026-05-22T23:45:03.365040")
+        // Swift's built-in .iso8601 strategy rejects fractional seconds, so we use a custom one.
+        let withFraction = ISO8601DateFormatter()
+        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let withoutFraction = ISO8601DateFormatter()
+        withoutFraction.formatOptions = [.withInternetDateTime]
+        d.dateDecodingStrategy = .custom { decoder in
+            let str = try decoder.singleValueContainer().decode(String.self)
+            if let date = withFraction.date(from: str) { return date }
+            if let date = withoutFraction.date(from: str) { return date }
+            throw DecodingError.dataCorruptedError(
+                in: try decoder.singleValueContainer(),
+                debugDescription: "Cannot parse date: \(str)"
+            )
+        }
         return d
     }
 
@@ -37,9 +51,16 @@ final class APIClient {
         body: Body?,
         token: String?
     ) async throws -> T {
-        let url = path.hasPrefix("http")
-            ? URL(string: path)!
-            : Config.apiBaseURL.appendingPathComponent(path)
+        let url: URL
+        if path.hasPrefix("http") {
+            url = URL(string: path)!
+        } else {
+            // Use string concatenation so query strings ("?foo=bar") aren't percent-encoded.
+            let base = Config.apiBaseURL.absoluteString
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            let suffix = path.hasPrefix("/") ? path : "/" + path
+            url = URL(string: base + suffix)!
+        }
 
         var req = URLRequest(url: url)
         req.httpMethod = method
