@@ -46,9 +46,7 @@ final class SessionViewModel: ObservableObject {
 
     func fetchRestaurants(sessionId: UUID) async throws {
         isLoading = true; defer { isLoading = false }
-        let wrapper: RestaurantsWrapper = try await api.get(
-            "/restaurants?session_id=\(sessionId)", token: token)
-        restaurants = wrapper.restaurants
+        restaurants = try await api.get("/restaurants?session_id=\(sessionId)", token: token)
     }
 
     func submitSwipe(sessionId: UUID, restaurantId: UUID, direction: SwipeDirection) async throws {
@@ -66,10 +64,6 @@ final class SessionViewModel: ObservableObject {
 private struct CreateSessionBody: Encodable {
     let locationLat: Double
     let locationLng: Double
-}
-
-private struct RestaurantsWrapper: Decodable {
-    let restaurants: [Restaurant]
 }
 
 private struct ResultsOut: Decodable {
