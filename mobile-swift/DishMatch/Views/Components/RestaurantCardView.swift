@@ -128,30 +128,36 @@ struct RestaurantCardView: View {
     @ViewBuilder private var cardContent: some View {
         // Fill the full frame so every card is identical in size regardless of content.
         VStack(alignment: .leading, spacing: 0) {
-            // Photo — exactly 280pt, no more.
-            ZStack {
-                if let urlStr = restaurant.photoUrl, let url = URL(string: urlStr) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let img):
-                            img.resizable()
-                                .scaledToFill()
-                                .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 280)
-                                .clipped()
-                        default:
-                            theme.surface
+            // Photo — GeometryReader pins image to the card's actual pixel width so
+            // scaledToFill never overflows sideways regardless of the image's aspect ratio.
+            GeometryReader { geo in
+                ZStack {
+                    if let urlStr = restaurant.photoUrl, let url = URL(string: urlStr) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let img):
+                                img.resizable()
+                                    .scaledToFill()
+                                    .frame(width: geo.size.width, height: 280)
+                                    .clipped()
+                            default:
+                                theme.surface
+                                    .frame(width: geo.size.width, height: 280)
+                            }
                         }
-                    }
-                } else {
-                    ZStack {
-                        theme.surface
-                        Image(systemName: "fork.knife")
-                            .font(.system(size: 40))
-                            .foregroundColor(theme.textTertiary)
+                        .frame(width: geo.size.width, height: 280)
+                    } else {
+                        ZStack {
+                            theme.surface
+                            Image(systemName: "fork.knife")
+                                .font(.system(size: 40))
+                                .foregroundColor(theme.textTertiary)
+                        }
+                        .frame(width: geo.size.width, height: 280)
                     }
                 }
             }
-            .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 280)
+            .frame(height: 280)
             .clipped()
 
             // Info — stretches to fill whatever height remains in the card frame.

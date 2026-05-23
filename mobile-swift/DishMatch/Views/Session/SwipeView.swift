@@ -111,10 +111,6 @@ struct SwipeView: View {
             }
         }
         .navigationBarHidden(true)
-        .onChange(of: vm.visibleRestaurants.isEmpty) { isEmpty in
-            guard isEmpty, !vm.isLoadingRestaurants, vm.swipeCount > 0 else { return }
-            vm.requestNavigateToResults()
-        }
         .alert("Leave Session?", isPresented: $showLeaveAlert) {
             Button("Leave", role: .destructive) { onLeave?() }
             Button("Cancel", role: .cancel) {}

@@ -9,6 +9,7 @@ final class SwipeViewModel: ObservableObject {
     @Published var showMatch = false
     @Published var navigateToResults = false
     @Published var isLoadingRestaurants = true
+    @Published var resultsReady = false   // set by WS events; surfaces the button without auto-nav
     private var didNavigateToResults = false
     private var didShowMatch = false
 
@@ -21,7 +22,7 @@ final class SwipeViewModel: ObservableObject {
     }
 
     var swipeCount: Int { swipedIds.count }
-    var canSeeResults: Bool { swipedIds.count >= 5 }
+    var canSeeResults: Bool { swipedIds.count >= 5 || resultsReady }
 
     var visibleRestaurants: [Restaurant] {
         let all = sessionVM?.restaurants ?? []
@@ -109,11 +110,11 @@ final class SwipeViewModel: ObservableObject {
         }
         ws.onPhaseChange = { [weak self] p in
             if p.phase == .results || p.phase == .matched {
-                self?.requestNavigateToResults()
+                self?.resultsReady = true
             }
         }
         ws.onTop3Ready = { [weak self] _ in
-            self?.requestNavigateToResults()
+            self?.resultsReady = true
         }
     }
 

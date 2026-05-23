@@ -12,7 +12,6 @@ struct LobbyView: View {
     var theme: AppTheme { AppTheme.current(for: themeStore.resolved(system: systemScheme)) }
 
     @StateObject private var ws = WebSocketService()
-    @State private var members: [SessionMember] = []
     @State private var showLeaveAlert = false
     @State private var showEndAlert = false
     @State private var isEndingSession = false
@@ -76,7 +75,9 @@ struct LobbyView: View {
                         path.append(SessionRoute.swipe(sessionId))
                     }
 
-                    // Members card
+                    // Members card — driven directly by sessionVM.session.members so WS
+                    // updates (onMemberJoined writes back to sessionVM.session) are reflected
+                    // without a separate local @State copy.
                     if session?.soloMode == true {
                         VStack(spacing: 8) {
                             Text("Solo session — swipe at your own pace.")
@@ -89,12 +90,13 @@ struct LobbyView: View {
                         .background(theme.surface)
                         .cornerRadius(12)
                     } else {
+                        let currentMembers = session?.members ?? []
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("In this session (\(members.count))")
+                            Text("In this session (\(currentMembers.count))")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(theme.text)
 
-                            ForEach(members) { member in
+                            ForEach(currentMembers) { member in
                                 HStack(spacing: 12) {
                                     AvatarView(name: member.name, userId: member.userId)
                                     Text(member.name)
@@ -141,20 +143,21 @@ struct LobbyView: View {
             Text("This ends the session for everyone.")
         }
         .task {
-            members = sessionVM.session?.members ?? []
             do {
                 try await sessionVM.fetchSession(sessionId)
-                members = sessionVM.session?.members ?? []
             } catch {
                 print("[LobbyView] fetchSession failed: \(error)")
             }
             guard let token = sessionVM.token else { return }
             ws.connect(sessionId: sessionId, token: token)
+            // Write new members back into sessionVM.session so @Published triggers a
+            // re-render — avoids closure-capture issues with a local @State copy.
             ws.onMemberJoined = { p in
-                let m = SessionMember(userId: p.userId, name: p.name, joinedAt: Date())
-                if !members.contains(where: { $0.userId == p.userId }) {
-                    members.append(m)
-                }
+                let newMember = SessionMember(userId: p.userId, name: p.name, joinedAt: Date())
+                guard var s = sessionVM.session,
+                      !s.members.contains(where: { $0.userId == p.userId }) else { return }
+                s.members.append(newMember)
+                sessionVM.session = s
             }
             ws.onPhaseChange = { p in
                 if p.phase == .results || p.phase == .matched {

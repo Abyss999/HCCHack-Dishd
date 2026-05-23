@@ -33,5 +33,6 @@ class User(Document):
         name = "users"
         indexes = [
             IndexModel("email", unique=True),
-            IndexModel("apple_id", unique=True, sparse=True),
+            # apple_id sparse unique index is managed manually in database._fix_indexes
+            # because Beanie strips the sparse option when building the createIndex command.
         ]
