@@ -93,7 +93,7 @@ struct SessionNavigator: View {
             // Root: SwipeView for live sessions, ResultsView for finished ones.
             Group {
                 if openAtResults {
-                    ResultsView(sessionId: sessionId, path: $path, onClose: { dismiss() })
+                    ResultsView(sessionId: sessionId, path: $path, onClose: { dismiss() }, sessionVM: sessionVM)
                         .environmentObject(sessionVM)
                         .id(sessionId)
                 } else {
@@ -112,7 +112,7 @@ struct SessionNavigator: View {
                     // onClose must dismiss the *cover*, not pop the nav back to the
                     // stale SwipeView (which would re-run its .task and end up
                     // showing the NYC mock list).
-                    ResultsView(sessionId: id, path: $path, onClose: { dismiss() })
+                    ResultsView(sessionId: id, path: $path, onClose: { dismiss() }, sessionVM: sessionVM)
                         .environmentObject(sessionVM)
                 }
             }

@@ -118,13 +118,21 @@ struct SwipeView: View {
             await vm.load()
         }
         .onChange(of: vm.navigateToResults) { navigate in
-            // navigateToResults is a one-shot flag (guarded in the VM). Push once.
-            if navigate { path.append(SessionRoute.results(sessionId)) }
+            if navigate {
+                // Small delay so any active fullScreenCover (MatchOverlay) finishes
+                // dismissing before we push onto the nav stack. Pushing during a
+                // cover dismissal is silently dropped on some iOS versions.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(400))
+                    path.append(SessionRoute.results(sessionId))
+                }
+            }
         }
         .fullScreenCover(isPresented: $vm.showMatch) {
             if let r = vm.matchedRestaurant {
                 MatchOverlay(restaurant: r) {
                     vm.showMatch = false
+                    // Navigate after cover dismisses (onChange delay handles timing).
                     vm.requestNavigateToResults()
                 }
             }

@@ -16,13 +16,13 @@ struct ResultsView: View {
     @State private var showMap = false
     @State private var mapsTarget: SessionResult?
 
-    init(sessionId: UUID, path: Binding<NavigationPath>, onClose: @escaping () -> Void) {
+    init(sessionId: UUID, path: Binding<NavigationPath>, onClose: @escaping () -> Void, sessionVM: SessionViewModel) {
         self.sessionId = sessionId
         self._path = path
         self.onClose = onClose
         self._vm = StateObject(wrappedValue: ResultsViewModel(
             sessionId: sessionId,
-            sessionVM: SessionViewModel()
+            sessionVM: sessionVM
         ))
     }
 

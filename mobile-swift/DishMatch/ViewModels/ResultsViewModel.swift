@@ -26,9 +26,17 @@ final class ResultsViewModel: ObservableObject {
     }
 
     func loadVibePick() async {
-        guard vibePick == nil, !results.isEmpty else { return }
+        guard vibePick == nil else { return }
         isLoadingVibe = true
         defer { isLoadingVibe = false }
+        // Retry once: results may still be empty on the first call for matched
+        // sessions where the swipe count is low. Give the backend a moment.
+        if results.isEmpty {
+            try? await Task.sleep(for: .milliseconds(800))
+            try? await sessionVM.fetchResults(sessionId: sessionId)
+            results = sessionVM.results
+        }
+        guard !results.isEmpty else { return }
         vibePick = try? await sessionVM.fetchVibePick(sessionId: sessionId)
     }
 

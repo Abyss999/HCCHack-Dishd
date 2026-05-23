@@ -64,9 +64,14 @@ def _apply_overrides_to_seed(
     rows: list[Restaurant], session
 ) -> list[Restaurant]:
     """Filter seeded restaurants by cuisine/budget overrides on the session.
+    Budget is treated as a ceiling — a $$ budget shows $, $$ but not $$$.
     Keeps rows with unknown price_tier so the stack never empties."""
     cuisines = [c.lower() for c in (session.cuisine_overrides or [])]
-    budgets = set(session.budget_overrides or [])
+    budget_overrides = session.budget_overrides or []
+    max_price_level = (
+        max(PRICE_LEVEL_BY_TIER[b] for b in budget_overrides if b in PRICE_LEVEL_BY_TIER)
+        if budget_overrides else None
+    )
 
     out = []
     for r in rows:
@@ -74,8 +79,9 @@ def _apply_overrides_to_seed(
             tags = {t.lower() for t in r.cuisine_tags}
             if not any(c in tags or any(c in t for t in tags) for c in cuisines):
                 continue
-        if budgets and r.price_tier is not None and r.price_tier not in budgets:
-            continue
+        if max_price_level is not None and r.price_tier is not None:
+            if PRICE_LEVEL_BY_TIER.get(r.price_tier, 0) > max_price_level:
+                continue
         out.append(r)
     return out
 
@@ -150,10 +156,10 @@ async def list_restaurants(
     )
 
     if budget_levels:
-        allowed_tiers = {b for b in (session.budget_overrides or [])}
+        ceiling = max(budget_levels)
         restaurants = [
             r for r in restaurants
-            if r.price_tier is None or r.price_tier in allowed_tiers
+            if r.price_tier is None or PRICE_LEVEL_BY_TIER.get(r.price_tier, 0) <= ceiling
         ]
 
     return [RestaurantOut(**r.model_dump()) for r in restaurants]
