@@ -7,7 +7,7 @@ enum MSMessageBuilder {
         let message = MSMessage(session: MSSession())
 
         let layout = MSMessageTemplateLayout()
-        layout.caption = "DishMatch"
+        layout.caption = "Dishd"
         layout.subcaption = "Tap to vote on restaurants"
         layout.trailingCaption = session.code
         layout.trailingSubcaption = "\(session.members.count) swiping"
@@ -15,7 +15,7 @@ enum MSMessageBuilder {
 
         message.layout = layout
         message.url = SessionURLParser.encode(session: session)
-        message.summaryText = "Invited you to a DishMatch session"
+        message.summaryText = "Invited you to a Dishd session"
 
         return message
     }
@@ -37,7 +37,7 @@ enum MSMessageBuilder {
                 .foregroundColor: UIColor.white,
                 .font: UIFont.boldSystemFont(ofSize: 26)
             ]
-            "DishMatch".draw(at: CGPoint(x: 118, y: 76), withAttributes: title)
+            "Dishd".draw(at: CGPoint(x: 118, y: 76), withAttributes: title)
 
             let sub: [NSAttributedString.Key: Any] = [
                 .foregroundColor: UIColor.white.withAlphaComponent(0.8),

@@ -121,7 +121,7 @@ class AuthService:
             user = await User.find_one(User.email == claims.email.lower())
 
         if user is None:
-            name = data.full_name or (claims.email.split("@")[0] if claims.email else "DishMatch User")
+            name = data.full_name or (claims.email.split("@")[0] if claims.email else "Dishd User")
             email = claims.email or f"{claims.sub}@privaterelay.appleid.com"
             user = User(email=email.lower(), password_hash=None, name=name, apple_id=claims.sub)
             await user.insert()

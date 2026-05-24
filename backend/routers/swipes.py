@@ -150,7 +150,7 @@ async def _finalize_top3(
     await notifications.send_to_session(
         session,
         title=f"Your Top {session.top_n} is ready",
-        body="Open DishMatch to see what your group picked.",
+        body="Open Dishd to see what your group picked.",
         data={"session_id": str(session.id), "type": "top3_ready"},
     )
 

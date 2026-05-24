@@ -1,4 +1,6 @@
-# DishMatch
+# Dishd
+
+> 🏆 **1st Place — DigitalOcean Track @ HCCHack (May 22–23, 2025)**
 
 Group restaurant decision app. Friends join a session via a 4-digit code, swipe yes/no on nearby restaurants, and the app either declares an **instant match** (every member said yes to the same place) or shows a **Top 3** leaderboard ranked by yes-count percentage. Also supports **solo mode** — one user swipes alone to get a personal top pick.
 
@@ -35,10 +37,10 @@ docker compose up -d                       # mongo + mongo-express (local target
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env                       # fill JWT_SECRET + GOOGLE_PLACES_API_KEY
-uvicorn main:app --reload --port 8001      # http://localhost:8001/docs
+uvicorn main:app --reload --port 8000    # http://localhost:8001/docs
 ```
 
-- Health check: `curl http://localhost:8001/` → `{"status":"ok","service":"dishmatch-api"}`
+- Health check: `curl http://localhost:8001/` → `{"status":"ok","service":"dishd-api"}`
 - Mongo admin UI: `http://localhost:8081` (admin/admin) when using the local Docker target.
 - Toggle Mongo target with `MONGO_TARGET=local|atlas` in `.env`.
 - Set `USE_MOCK_RESTAURANTS=true` to force the hardcoded NYC restaurant list (skips Google Places). The same effect is available per-request via `?mock=true` on `/restaurants`.

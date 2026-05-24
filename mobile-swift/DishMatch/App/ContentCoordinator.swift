@@ -36,7 +36,7 @@ struct SplashView: View {
                 Image(systemName: "fork.knife.circle.fill")
                     .font(.system(size: 64))
                     .foregroundColor(Color(hex: "#d97757"))
-                Text("DishMatch")
+                Text("Dishd")
                     .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.white)
             }

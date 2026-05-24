@@ -1,4 +1,6 @@
-# DishMatch
+# Dishd
+
+> 🏆 1st Place — DigitalOcean Track @ HCCHack (May 22–23, 2025)
 
 Group restaurant decision app. Friends join a session via a 4-digit code, swipe yes/no on nearby restaurants, and the app either declares an **instant match** (every member said yes to the same place) or a **Top 3** leaderboard ranked by yes-count percentage. Also supports **solo mode** — one user swipes alone to get a personal top pick.
 
@@ -57,7 +59,7 @@ HCCHack/
     ├── DishMatch.xcodeproj
     ├── project.yml                  # xcodegen spec
     └── DishMatch/
-        ├── App/                     # DishMatchApp, AppDelegate, ContentCoordinator + navigators
+        ├── App/                     # DishdApp, AppDelegate, ContentCoordinator + navigators
         ├── Core/
         │   ├── Auth/                # AuthStore (@ObservableObject), KeychainService
         │   ├── Network/             # APIClient (URLSession), NetworkError

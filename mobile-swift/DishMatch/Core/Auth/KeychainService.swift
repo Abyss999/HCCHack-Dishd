@@ -2,8 +2,8 @@ import Foundation
 import Security
 
 enum KeychainService {
-    private static let service = "com.dishmatch.app"
-    private static let sharedAccessGroup = "group.com.dishmatch.app"
+    private static let service = "com.dishd.app"
+    private static let sharedAccessGroup = "group.com.dishd.app"
 
     static func set(_ value: String, forKey key: String, shared: Bool = false) throws {
         let data = Data(value.utf8)

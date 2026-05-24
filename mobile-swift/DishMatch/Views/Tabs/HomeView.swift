@@ -29,7 +29,7 @@ struct HomeView: View {
                         // Header
                         ZStack {
                             VStack(spacing: 6) {
-                                Text("DishMatch")
+                                Text("Dishd")
                                     .font(.system(size: 28, weight: .black))
                                     .foregroundColor(theme.text)
                                 Text("Swipe together, eat together")

@@ -37,7 +37,7 @@ struct CodeDisplayView: View {
                 }
                 .buttonStyle(.plain)
 
-                ShareLink(item: "Join my DishMatch session! Code: \(code.uppercased())") {
+                ShareLink(item: "Join my Dishd session! Code: \(code.uppercased())") {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(theme.primary)

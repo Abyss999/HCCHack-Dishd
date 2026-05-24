@@ -24,15 +24,19 @@ class Database:
 
     @classmethod
     async def _fix_indexes(cls, db) -> None:
-        # Beanie strips the sparse option when building createIndex commands, so we manage
-        # the apple_id sparse unique index manually: drop any existing version, then recreate.
+        # Beanie serializes apple_id=None as {"apple_id": null}, and MongoDB sparse indexes
+        # still index explicit null values — so sparse causes DuplicateKeyError for every
+        # second non-Apple user. Use a partial index instead: only index non-null apple_ids.
         try:
             await db["users"].drop_index("apple_id_1")
         except Exception:
             pass
         try:
             await db["users"].create_index(
-                "apple_id", unique=True, sparse=True, name="apple_id_1"
+                "apple_id",
+                unique=True,
+                partialFilterExpression={"apple_id": {"$type": "string"}},
+                name="apple_id_1",
             )
         except Exception:
             pass

@@ -20,7 +20,7 @@ struct CompactSessionView: View {
                 Image(systemName: "fork.knife.circle.fill")
                     .foregroundColor(primaryColor)
                     .font(.system(size: 22))
-                Text("DishMatch")
+                Text("Dishd")
                     .font(.system(size: 18, weight: .bold))
                 Spacer()
             }

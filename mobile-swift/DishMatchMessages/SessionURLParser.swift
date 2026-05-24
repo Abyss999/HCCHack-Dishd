@@ -6,7 +6,7 @@ struct SessionInfo {
 }
 
 enum SessionURLParser {
-    private static let scheme = "dishmatch"
+    private static let scheme = "dishd"
     private static let host = "session"
 
     static func encode(session: Session) -> URL {

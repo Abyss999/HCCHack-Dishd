@@ -121,7 +121,7 @@ final class MessagesViewController: MSMessagesAppViewController {
     private func insertMessage(for session: Session, into conversation: MSConversation) {
         let message = MSMessageBuilder.build(session: session)
         conversation.insert(message) { error in
-            if let error { print("[DishMatch] message insert error: \(error)") }
+            if let error { print("[Dishd] message insert error: \(error)") }
         }
     }
 

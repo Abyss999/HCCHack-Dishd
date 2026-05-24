@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     mongo_target: Literal["local", "atlas"] = "local"
     mongo_url_local: str = "mongodb://localhost:27017"
     mongo_url_atlas: str = ""
-    mongo_db_name: str = "dishmatch"
+    mongo_db_name: str = "dishd"
 
     @property
     def mongo_url(self) -> str:
@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     max_session_members: int = 12
 
     # Apple Sign In
-    apple_bundle_id: str = "com.dishmatch.app"
+    apple_bundle_id: str = "com.dishd.app"
 
     @property
     def cors_allow_credentials(self) -> bool:

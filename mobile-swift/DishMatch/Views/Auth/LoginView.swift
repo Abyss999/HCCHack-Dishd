@@ -22,7 +22,7 @@ struct LoginView: View {
                         Image(systemName: "fork.knife.circle.fill")
                             .font(.system(size: 56))
                             .foregroundColor(theme.primary)
-                        Text("DishMatch")
+                        Text("Dishd")
                             .font(.system(size: 32, weight: .black))
                             .foregroundColor(theme.text)
                         Text("Find where everyone wants to eat")

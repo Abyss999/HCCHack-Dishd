@@ -7,7 +7,7 @@ final class ThemeStore: ObservableObject {
 
     @Published var mode: Mode = .system
 
-    private let key = "dishmatch_theme_mode"
+    private let key = "dishd_theme_mode"
 
     init() {
         if let stored = UserDefaults.standard.string(forKey: key),

@@ -21,7 +21,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     perform_startup_checks(settings)
 
-    app = FastAPI(title="DishMatch API", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Dishd API", version="0.1.0", lifespan=lifespan)
 
     # Outer-to-inner: trusted host → gzip → security headers → size limit → slowapi → CORS → routes.
     if "*" not in settings.allowed_hosts:
@@ -38,7 +38,7 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     async def health() -> dict[str, str]:
-        return {"status": "ok", "service": "dishmatch-api"}
+        return {"status": "ok", "service": "dishd-api"}
 
     from routers import auth, recommendations, restaurants, sessions, swipes, users
 

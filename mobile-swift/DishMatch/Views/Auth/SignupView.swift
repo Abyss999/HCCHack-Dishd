@@ -22,7 +22,7 @@ struct SignupView: View {
                         Text("Create Account")
                             .font(.system(size: 28, weight: .black))
                             .foregroundColor(theme.text)
-                        Text("Join DishMatch and never argue about food again")
+                        Text("Join Dishd and never argue about food again")
                             .font(.system(size: 14))
                             .foregroundColor(theme.textSecondary)
                             .multilineTextAlignment(.center)

@@ -65,7 +65,7 @@ struct ExpandedSwipeView: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("DishMatch")
+                    Text("Dishd")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
                     Text("Code: \(sessionCode)")

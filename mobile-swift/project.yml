@@ -1,7 +1,7 @@
-name: DishMatch
+name: Dishd
 
 options:
-  bundleIdPrefix: com.dishmatch
+  bundleIdPrefix: com.dishd
   deploymentTarget:
     iOS: "16.0"
   xcodeVersion: "16"
@@ -37,7 +37,7 @@ targets:
       - path: DishMatch/Resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.dishmatch.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.dishd.app
         INFOPLIST_FILE: DishMatch/Resources/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     dependencies:
@@ -49,8 +49,8 @@ targets:
   # DishMatchMessages: requires paid Apple Developer account (App Groups + Sign in with Apple).
   # All extension source lives in DishMatchMessages/. To enable:
   #   1. Get a paid Apple Developer membership
-  #   2. Register group.com.dishmatch.app as an App Group in the portal
-  #   3. Enable Sign in with Apple for com.dishmatch.app
+  #   2. Register group.com.dishd.app as an App Group in the portal
+  #   3. Enable Sign in with Apple for com.dishd.app
   #   4. Uncomment the block below and run `xcodegen generate`
   #
   # DishMatchMessages:
@@ -83,7 +83,7 @@ targets:
   #     - path: DishMatchMessages/Resources
   #   settings:
   #     base:
-  #       PRODUCT_BUNDLE_IDENTIFIER: com.dishmatch.app.messages
+  #       PRODUCT_BUNDLE_IDENTIFIER: com.dishd.app.messages
   #       INFOPLIST_FILE: DishMatchMessages/Resources/Info.plist
   #       APPLICATION_EXTENSION_API_ONLY: YES
   #       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -93,7 +93,7 @@ targets:
   #       com.apple.developer.applesignin:
   #         - Default
   #       com.apple.security.application-groups:
-  #         - group.com.dishmatch.app
+  #         - group.com.dishd.app
   #   dependencies:
   #     - package: Nuke
   #       product: Nuke

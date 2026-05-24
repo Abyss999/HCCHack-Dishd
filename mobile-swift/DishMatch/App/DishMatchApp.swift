@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct DishMatchApp: App {
+struct DishdApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var authStore = AuthStore.shared
     @StateObject private var themeStore = ThemeStore()

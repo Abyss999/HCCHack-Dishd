@@ -12,7 +12,7 @@ struct CompactLoginView: View {
                 Image(systemName: "fork.knife.circle.fill")
                     .foregroundColor(Color(hex: "#d97757"))
                     .font(.system(size: 22))
-                Text("DishMatch")
+                Text("Dishd")
                     .font(.system(size: 18, weight: .bold))
                 Spacer()
             }
